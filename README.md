@@ -36,3 +36,7 @@ Alternatively copy the script to your Photoshop .../Presets/Scripts folder, then
 To change settings for the current preset click "Define".
 
 To create a new preset click "Define" for an existing preset and enter a new name for it.
+
+## Contribution and issues
+
+I'm not going to put a lot of time into this other than playing around with code restructuring ideas, but if you have bug fixes to include that would be great.
