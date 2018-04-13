@@ -2466,7 +2466,6 @@ try {
                     app.open(imageFile);
                     activeDocumentHandler.saveSmallJPEG(saveFile, runOptions.imageParameters);
                     saveCount = i + 1;
-                    saveCount = i + 1;
                         if  (   (runOptions.imageParameters.smallImageWarning)
                                 && (activeDocument.width < runOptions.imageParameters.width)
                                 && (activeDocument.height < runOptions.imageParameters.height)
