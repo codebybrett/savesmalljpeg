@@ -10,7 +10,8 @@ Now that lightroom is here, many will have no need for this script because they 
 
 ## Features
 
-* Export settings are stored under a single name.
+* Export settings are stored as a named preset.
+* Define multiple presets.
 * Constrain images to fit within width and height.
 * Exports as sRGB.
 * Optional maximum file size, maximises quality while fitting in specified file size.
@@ -19,5 +20,9 @@ Now that lightroom is here, many will have no need for this script because they 
 * Optional photoshop actions.
 * Optional Bruce Fraser sharpening steps.
 * Optional scaling options for creating images suitable for supermarket printers.
+* Preset file is a simplified XML file that could be distributed.
+* Simple user interface.
 
 Main processing workflow:  duplicate, flatten, resize, sharpening, scaling on canvas, convert to profile, convert to 8bit, save reducing quality until filesize achieved.
+
+The default preset is set to make life easy for my camera club.
