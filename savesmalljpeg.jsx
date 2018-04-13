@@ -1107,7 +1107,9 @@ function showUiMain (runOptions, settings) {
                     //  Single image mode.
                     this.etName.visible = true;
                     this.saveBtn.text = "Save"
-                    this.allowOk = function () {return (this.etName.text != "")};  // Allow ok nce a name has been input.
+                    this.allowOk = function () {
+                        return (this.etName.text != "")
+                    };  // Allow ok once a name has been input.
                     
                 } else {
                     
@@ -1115,8 +1117,8 @@ function showUiMain (runOptions, settings) {
                     this.etInputFolder.visible = true;
                     this.saveBtn.text = "Run"
                     this.allowOk = function () {
-                        return (this.etInputFolder.text != "") // Allow Ok once processing folder is specified.
-                    };
+                        return (this.etInputFolder.text != "")
+                    };  // Allow Ok once processing folder is specified.
                 
                 };
 
@@ -1183,14 +1185,14 @@ function showUiMain (runOptions, settings) {
                 else
                     locationTxt = ": " + ultimateSaveFolder.fsName;
 
-                if (!currentImageOnly)
+                if (currentImageOnly)
+                    locationTxt = 'Saving in' + locationTxt
+                else
                     if (preset.namingBehaviour == "original")
                         locationTxt =  'Saving in' + locationTxt
                     else
-                        locationTxt = 'Rename, save in' + locationTxt
-               else
-                    locationTxt = 'Saving in' + locationTxt
-                        
+                        locationTxt = 'Rename, save in' + locationTxt;
+               
                this.runOptions.saveFolder = ultimateSaveFolder;
             
          };
@@ -1694,8 +1696,8 @@ function showUiPreset (mainWindow, preset, allowPresetDelete) {
             case "Check Ok":  // Enables okBtn if there are numbers for width, height and filesize (or filesize blank)
 
                 ui.uiWarning.visible = ((Number(ui.uiMaxFilesizeKb.text)) && (!currentImageOnly));
-                  ui.uiSaveFolder.visible = (ui.uiSaveInFolder.value);
-                  ui.uiSubfolderOptionTxt.visible = ui.uiSubfolderOption.visible = (! ui.uiAskOnSave.value);
+                ui.uiSaveFolder.visible = (ui.uiSaveInFolder.value);
+                ui.uiSubfolderOptionTxt.visible = ui.uiSubfolderOption.visible = (! ui.uiAskOnSave.value);
                 ui.uiChooseSaveOptionTxt.visible = ! ((ui.uiAskOnSave.value)  || (ui.uiSaveToSourceFolder.value) || (ui.uiSaveInFolder.value && (ui.uiSaveFolder.text != "")))
                 
                 ui.uiOkBtn.enabled = ( (ui.uiPresetName.text.indexOf("<") < 0) && (ui.uiPresetName.text.indexOf(">") < 0)
@@ -1704,41 +1706,41 @@ function showUiPreset (mainWindow, preset, allowPresetDelete) {
                     && ((ui.uiMaxFilesizeKb.text == "") || (Number(ui.uiMaxFilesizeKb.text)))
                     && ((currentImageOnly)  || (ui.uiSaveToSourceFolder.value) || (ui.uiSaveInFolder.value))
                     && ((ui.uiAskOnSave.value) || (ui.uiSaveToSourceFolder.value) || (ui.uiSaveFolder.text != ""))
-                    );
+                );
                     
                 if (ui.uiPostResizeSharpening.selection == gPostResizeSharpeningIds.indexAt("sharpenForDigitalBFraser")) {
-                      ui.uiOkBtn.enabled = ui.uiOkBtn.enabled
-                          &&  (
-                                        (ui.uiPostResizeSharpeningOpt.text == "")
-                                        ||
-                                        ((0 <= Number(ui.uiPostResizeSharpeningOpt.text)) && (100 >= Number(ui.uiPostResizeSharpeningOpt.text)))
-                                      )
-                }
+                    ui.uiOkBtn.enabled = ui.uiOkBtn.enabled
+                        &&  (
+                            (ui.uiPostResizeSharpeningOpt.text == "")
+                            ||
+                            ((0 <= Number(ui.uiPostResizeSharpeningOpt.text)) && (100 >= Number(ui.uiPostResizeSharpeningOpt.text)))
+                        )
+                };
 
-                  if (ui.uiPlaceOnCanvasBehaviour.selection == gPlaceOnCanvasBehaviourIds.indexAt('borders-min')) {
-                      ui.uiOkBtn.enabled = ui.uiOkBtn.enabled
-                          &&  ((ui.uiCanvasOpt1.text == "") || (0 <= Number(ui.uiCanvasOpt1.text)))
-                          && ((ui.uiCanvasOpt2.text == "") || (0 <= Number(ui.uiCanvasOpt2.text)))
-                          && ((ui.uiCanvasOpt3.text == "") || (0 <= Number(ui.uiCanvasOpt3.text)))
-                          && ((ui.uiCanvasOpt4.text == "") || (0 <= Number(ui.uiCanvasOpt4.text)))
-                  };
+                if (ui.uiPlaceOnCanvasBehaviour.selection == gPlaceOnCanvasBehaviourIds.indexAt('borders-min')) {
+                    ui.uiOkBtn.enabled = ui.uiOkBtn.enabled
+                        &&  ((ui.uiCanvasOpt1.text == "") || (0 <= Number(ui.uiCanvasOpt1.text)))
+                        && ((ui.uiCanvasOpt2.text == "") || (0 <= Number(ui.uiCanvasOpt2.text)))
+                        && ((ui.uiCanvasOpt3.text == "") || (0 <= Number(ui.uiCanvasOpt3.text)))
+                        && ((ui.uiCanvasOpt4.text == "") || (0 <= Number(ui.uiCanvasOpt4.text)))
+                };
 
                 if (ui.uiPlaceOnCanvasBehaviour.selection == gPlaceOnCanvasBehaviourIds.indexAt('scale-and-offset')) {
-                      ui.uiOkBtn.enabled = ui.uiOkBtn.enabled
-                          &&  ((ui.uiCanvasOpt1.text == "") || (0 < Number(ui.uiCanvasOpt1.text)))
-                          && ((ui.uiCanvasOpt2.text == "") || (! isNaN(Number(ui.uiCanvasOpt2.text)))) // can be less zero
-                          && ((ui.uiCanvasOpt3.text == "") || (! isNaN(Number(ui.uiCanvasOpt3.text)))) // can be less zero
-                  };
+                    ui.uiOkBtn.enabled = ui.uiOkBtn.enabled
+                        &&  ((ui.uiCanvasOpt1.text == "") || (0 < Number(ui.uiCanvasOpt1.text)))
+                        && ((ui.uiCanvasOpt2.text == "") || (! isNaN(Number(ui.uiCanvasOpt2.text)))) // can be less zero
+                        && ((ui.uiCanvasOpt3.text == "") || (! isNaN(Number(ui.uiCanvasOpt3.text)))) // can be less zero
+                };
                             
                 break;
 
             case "Check save behaviour option":
                 ui.uiAskOnSave.enabled = (currentImageOnly);
                 // ui.uiSaveInFolder.value = true;
-                  ui.uiAskOnSave.value = false;
-                  ui.uiNamingBehaviour.visible = (!currentImageOnly)
-                  if (currentImageOnly)
-                       ui.uiNamingBehaviour.selection = gNamingBehaviourIds.indexAt("original"); // Reset to original naming.
+                ui.uiAskOnSave.value = false;
+                ui.uiNamingBehaviour.visible = (!currentImageOnly)
+                if (currentImageOnly)
+                    ui.uiNamingBehaviour.selection = gNamingBehaviourIds.indexAt("original"); // Reset to original naming.
                 break;
 
             case "Check presentation options":
@@ -1857,9 +1859,9 @@ function showUiPreset (mainWindow, preset, allowPresetDelete) {
         preset.backgroundActionLastName = gActionOptions[ui.uibackgroundActionLast.selection.index].actionName;
         preset.reductionMethodOption = gReductionMethodOptionIds[ui.uiReductionMethodOption.selection.index];
         preset.namingBehaviour = gNamingBehaviourIds[ui.uiNamingBehaviour.selection.index];
-         preset.imageRotationOptions = gImageRotationOptionsIds[ui.uiImageRotationOptions.selection.index];
-         preset.placeOnCanvasBehaviour = gPlaceOnCanvasBehaviourIds[ui.uiPlaceOnCanvasBehaviour.selection.index];
-         preset.backgroundOptions = gBackgroundOptionsIds[ui.uiBackgroundOptions.selection.index];
+        preset.imageRotationOptions = gImageRotationOptionsIds[ui.uiImageRotationOptions.selection.index];
+        preset.placeOnCanvasBehaviour = gPlaceOnCanvasBehaviourIds[ui.uiPlaceOnCanvasBehaviour.selection.index];
+        preset.backgroundOptions = gBackgroundOptionsIds[ui.uiBackgroundOptions.selection.index];
         preset.postResizeSharpening = gPostResizeSharpeningIds[ui.uiPostResizeSharpening.selection.index];
         preset.postResizeSharpeningOpt = ui.uiPostResizeSharpeningOpt.text;
         if (ui.uiSmallImageWarning.value)
