@@ -26,3 +26,13 @@ Now that lightroom is here, many will have no need for this script because they 
 Main processing workflow:  duplicate, flatten, resize, sharpening, scaling on canvas, convert to profile, convert to 8bit, save reducing quality until filesize achieved.
 
 The default preset is set to make life easy for my camera club.
+
+## How to use
+
+In Photoshop use File/Scripts/Browse and load the script.
+
+Alternatively copy the script to your Photoshop .../Presets/Scripts folder, then you can access it by File/Scripts/Save Small JPEG...
+
+To change settings for the current preset click "Define".
+
+To create a new preset click "Define" for an existing preset and enter a new name for it.
