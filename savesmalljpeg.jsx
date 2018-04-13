@@ -1077,8 +1077,8 @@ function showUiMain (runOptions, settings) {
 
         // Using the currently selected preset...
         var preset = this.settings.userData.preset[this.ddPreset.selection.index]
-         var currentImageOnly = (preset.inputOption == "currentImage");
-         var savingToSourceFolder = (preset.saveBehaviour == "saveToSourceFolder")
+        var currentImageOnly = (preset.inputOption == "currentImage");
+        var savingToSourceFolder = (preset.saveBehaviour == "saveToSourceFolder")
         var locationTxt;
 
         // Updating this here, because we use the folder that was displayed to the user.
@@ -1126,11 +1126,11 @@ function showUiMain (runOptions, settings) {
                 switch (preset.subFolderOption) {
                     case "none":
                         break;
-                      case "const-edi":
-                      case "const-jpg":
-                      case "const-prints":
-                      case "const-thumbs":
-                      case "const-smalljpeg":
+                    case "const-edi":
+                    case "const-jpg":
+                    case "const-prints":
+                    case "const-thumbs":
+                    case "const-smalljpeg":
                         subfolderTxt = gSubfolderOptionTxtList[gSubfolderOptionIds.indexAt(preset.subFolderOption)];
                         break;
                     case "firstwed-yymm":
@@ -1142,7 +1142,7 @@ function showUiMain (runOptions, settings) {
                         subfolderTxt = formatDate(theDate, "yyyymmdd");
                         break;
                     default:
-                     subfolderTxt = formatDate(today, gSubfolderOptionTxtList[gSubfolderOptionIds.indexAt(preset.subFolderOption)]);
+                        subfolderTxt = formatDate(today, gSubfolderOptionTxtList[gSubfolderOptionIds.indexAt(preset.subFolderOption)]);
                 };
             
                 // Saving to a folder - curent image or batch?

@@ -6,7 +6,7 @@ It's a low fuss way to export Photoshop documents as Jpeg images according to sp
 
 My original motivation (in 2008) was to use a preset based approach to exporting images for Camera Club members. Camera clubs will have competition requirements that images must meet for entry. Getting the requirements right is a fiddly and error prone process if one is not careful. This script automates that process.  SaveForWeb is an alternative, but is still awkward to get right.
 
-Now that lightroom is here, many will have no need for this script because they can use the preset export approach in Lightroom.  But if you're a Photoshop user who just wants an easy regularly used export has value.
+Now that lightroom is here, many will have no need for this script because they can use the preset export approach in Lightroom.  But if you're a Photoshop user who just wants an easy regularly used way to export PSDs or other images to Jpeg this script has value.
 
 ## Features
 
