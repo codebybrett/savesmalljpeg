@@ -1419,19 +1419,19 @@ function showUiPreset (mainWindow, preset, allowPresetDelete) {
                 orientation: 'column',\
                 alignChildren: 'fill',\
                 margins: 15,\
-                  ddlInputOption:DropDownList{properties: {name: 'uiInputOption'}, helpTip: 'This determines what images are processed, a single open image, or multiple images in a folder.'},\
+                ddlInputOption:DropDownList{properties: {name: 'uiInputOption'}, helpTip: 'This determines what images are processed, a single open image, or multiple images in a folder.'},\
                 g0: Group { \
                      orientation: 'row',\
-                       alignChildren: 'fill',\
+                    alignChildren: 'fill',\
                     g0: Group {\
-                           size: [180,25],\
-                           alignChildren: ['right','center'],\
+                        size: [180,25],\
+                        alignChildren: ['right','center'],\
                         statictext1:StaticText{text:'Max. width (pixels):'},\
                         etMaxWidthPx:EditText{ properties: {name: 'uiMaxWidthPx'}, characters: 5, text:'1024' , helpTip: 'The image will be scaled to fit within this limit.'}\
                     },\
                     g1: Group {\
                         size: [180,25],\
-                           alignChildren: ['right','center'],\
+                        alignChildren: ['right','center'],\
                         statictext2:StaticText{text:'Max. height (pixels):' },\
                         etMaxHeightPx:EditText{ properties: {name: 'uiMaxHeightPx'}, characters: 5, text:'768' , helpTip: 'The image will be scaled to fit within this limit.'}\
                     },\
@@ -1443,10 +1443,10 @@ function showUiPreset (mainWindow, preset, allowPresetDelete) {
                 },\
                 g1: Group { \
                     orientation: 'row',\
-                       alignChildren: 'fill',\
+                    alignChildren: 'fill',\
                     g0: Group {\
-                           size: [180,20],\
-                           alignChildren: ['right','center'],\
+                        size: [180,20],\
+                        alignChildren: ['right','center'],\
                         statictext3:StaticText{text:'Max. filesize (Kb):' },\
                         etMaxFilesizeKb:EditText{ properties: {name: 'uiMaxFilesizeKb'}, characters: 5, text:'' , helpTip: 'Repeatedly save the file at reducing quality until the file is less than or equal to this limit.'}\
                     },\
@@ -1458,13 +1458,13 @@ function showUiPreset (mainWindow, preset, allowPresetDelete) {
                         helpTip: 'Warns you if your image is smaller than both the maximum height and maximum width.'\
                     }\
                 },\
-                  g1: Group {\
+                g1: Group {\
                     orientation: 'row',\
-                       alignChildren: 'fill',\
-                        statictext1:StaticText{ text:'Note:' },\
-                        etPresetNotes:EditText{ properties: {name: 'uiPresetNotes'}, characters: 80, text:'' , helpTip: 'Enter any notes you would like to make about this preset.'}\
-                  }\
-                  stRepetitionWarning:StaticText{properties: {name: 'uiWarning'}, justify: 'center', text:'Every file will be saved repeatedly to achieve max. filesize - this could take a while.' }\
+                    alignChildren: 'fill',\
+                    statictext1:StaticText{ text:'Note:' },\
+                    etPresetNotes:EditText{ properties: {name: 'uiPresetNotes'}, characters: 80, text:'' , helpTip: 'Enter any notes you would like to make about this preset.'}\
+                }\
+                stRepetitionWarning:StaticText{properties: {name: 'uiWarning'}, justify: 'center', text:'Every file will be saved repeatedly to achieve max. filesize - this could take a while.' }\
             },\
             gImageOptionsPnl: Panel { \
                 type: 'tabbedpanel',\
@@ -1502,33 +1502,33 @@ function showUiPreset (mainWindow, preset, allowPresetDelete) {
                     orientation: 'column',\
                     alignChildren: 'fill',\
                     margins: 15,\
-                      ddlPlacementAction:DropDownList{properties: {name: 'uiplacementAction'}, helpTip: 'You can choose to run a photoshop action.'},\
-                      ddlPlaceOnCanvasBehaviour:DropDownList{properties: {name: 'uiPlaceOnCanvasBehaviour'}, helpTip: 'Canvas options.'},\
-                      gCanvasOptions: Group { \
-                            orientation: 'row',\
-                            alignChildren: 'fill',\
-                            ddlBackgroundOptions:DropDownList{properties: {name: 'uiBackgroundOptions'}, helpTip: 'Background options.'},\
-                            g0: Group {\
-                                alignChildren: ['right','center'],\
-                                statictext1:StaticText{ properties: {name: 'uiCanvasOpt1Txt'}, characters: 6, justify: 'right', text:'?:' },\
-                                etCanvasOpt1:EditText{ properties: {name: 'uiCanvasOpt1'}, characters: 5, text:''}\
-                            },\
-                            g1: Group {\
-                                alignChildren: ['right','center'],\
-                                statictext1:StaticText{ properties: {name: 'uiCanvasOpt2Txt'}, characters: 6, justify: 'right', text:'?:' },\
-                                etCanvasOpt2:EditText{ properties: {name: 'uiCanvasOpt2'}, characters: 5, text:''}\
-                            },\
-                            g2: Group {\
-                                alignChildren: ['right','center'],\
-                                statictext1:StaticText{ properties: {name: 'uiCanvasOpt3Txt'}, characters: 6, justify: 'right', text:'?:' },\
-                                etCanvasOpt3:EditText{ properties: {name: 'uiCanvasOpt3'}, characters: 5, text:''}\
-                            },\
-                            g3: Group {\
-                                alignChildren: ['right','center'],\
-                                statictext1:StaticText{ properties: {name: 'uiCanvasOpt4Txt'}, characters: 6, justify: 'right', text:'?:' },\
-                                etCanvasOpt4:EditText{ properties: {name: 'uiCanvasOpt4'}, characters: 5, text:''}\
-                            }\
-                      },\
+                    ddlPlacementAction:DropDownList{properties: {name: 'uiplacementAction'}, helpTip: 'You can choose to run a photoshop action.'},\
+                    ddlPlaceOnCanvasBehaviour:DropDownList{properties: {name: 'uiPlaceOnCanvasBehaviour'}, helpTip: 'Canvas options.'},\
+                    gCanvasOptions: Group { \
+                        orientation: 'row',\
+                        alignChildren: 'fill',\
+                        ddlBackgroundOptions:DropDownList{properties: {name: 'uiBackgroundOptions'}, helpTip: 'Background options.'},\
+                        g0: Group {\
+                            alignChildren: ['right','center'],\
+                            statictext1:StaticText{ properties: {name: 'uiCanvasOpt1Txt'}, characters: 6, justify: 'right', text:'?:' },\
+                            etCanvasOpt1:EditText{ properties: {name: 'uiCanvasOpt1'}, characters: 5, text:''}\
+                        },\
+                        g1: Group {\
+                            alignChildren: ['right','center'],\
+                            statictext1:StaticText{ properties: {name: 'uiCanvasOpt2Txt'}, characters: 6, justify: 'right', text:'?:' },\
+                            etCanvasOpt2:EditText{ properties: {name: 'uiCanvasOpt2'}, characters: 5, text:''}\
+                        },\
+                        g2: Group {\
+                            alignChildren: ['right','center'],\
+                            statictext1:StaticText{ properties: {name: 'uiCanvasOpt3Txt'}, characters: 6, justify: 'right', text:'?:' },\
+                            etCanvasOpt3:EditText{ properties: {name: 'uiCanvasOpt3'}, characters: 5, text:''}\
+                        },\
+                        g3: Group {\
+                            alignChildren: ['right','center'],\
+                            statictext1:StaticText{ properties: {name: 'uiCanvasOpt4Txt'}, characters: 6, justify: 'right', text:'?:' },\
+                            etCanvasOpt4:EditText{ properties: {name: 'uiCanvasOpt4'}, characters: 5, text:''}\
+                        }\
+                    },\
                 },\
                 gImageLastlyTab: Panel {\
                     type: 'tab',\
