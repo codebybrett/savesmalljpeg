@@ -128,6 +128,8 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //  1.18 13-Apr-2018 - Brett Handley
 //                            Fix bug where preset panel is off screen.
 //                            Rename Edit  preset to Define.
+//                            Move to GitHub.
+
 
 // ================================================================================
 // Target Photoshop / Photoshop menu behaviour for this script
@@ -154,7 +156,7 @@ bringToFront();
         // Used with getCustomOptions
         // var scriptUUID = "c1025640-4ccf-11dd-ae16-0800200c9a66"
 
-var scriptVersion = '1.18';
+var scriptVersion = '1.19';
 
 // Using a file to store data between sessions - hopefully will work with older versions.
 var configDataFile = new File (app.preferencesFolder + './SaveSmallJpegSettings.xml');
@@ -1464,7 +1466,7 @@ function showUiPreset (mainWindow, preset, allowPresetDelete) {
                     statictext1:StaticText{ text:'Note:' },\
                     etPresetNotes:EditText{ properties: {name: 'uiPresetNotes'}, characters: 80, text:'' , helpTip: 'Enter any notes you would like to make about this preset.'}\
                 }\
-                stRepetitionWarning:StaticText{properties: {name: 'uiWarning'}, justify: 'center', text:'Every file will be saved repeatedly to achieve max. filesize - this could take a while.' }\
+                stRepetitionWarning:StaticText{properties: {name: 'uiSaveRepeatWarning'}, justify: 'center', text:'Every file will be saved repeatedly to achieve max. filesize - this could take a while.' }\
             },\
             gImageOptionsPnl: Panel { \
                 type: 'tabbedpanel',\
@@ -1567,11 +1569,11 @@ function showUiPreset (mainWindow, preset, allowPresetDelete) {
                  },\
                  ddlNamingBehaviour:DropDownList{properties: {name: 'uiNamingBehaviour'}, helpTip: 'Determines how the new JPG will be named.'}\
             },\
+            stChooseSaveOption:StaticText{ properties: {name: 'uiChooseSaveOptionTxt'}, justify: 'right', text:'' },\
             gBtns: Group { \
                 orientation: 'row', \
                 alignChildren: 'fill', \
                 delBtn:Button{properties: {name: 'uiDelBtn'}, text:'Remove preset permanently' , helpTip: 'Permanently remove/delete this preset.'},\
-                stChooseSaveOption:StaticText{ properties: {name: 'uiChooseSaveOptionTxt'}, alignment: ['right','bottom'], text:'Please specify where to save the image.' },\
                 **put buttons here**\
             }\
         }";
@@ -1695,31 +1697,47 @@ function showUiPreset (mainWindow, preset, allowPresetDelete) {
 
             case "Check Ok":  // Enables okBtn if there are numbers for width, height and filesize (or filesize blank)
 
-                ui.uiWarning.visible = ((Number(ui.uiMaxFilesizeKb.text)) && (!currentImageOnly));
+                var errors = null;
+                var validate = function (condition, desc) {
+                    if (!condition) {
+                        if (!errors) {errors = desc}
+                    }
+                };
+                var validateField = function (ui, condition, desc) {
+                    validate(condition, desc)
+                };
+
+                ui.uiSaveRepeatWarning.visible = ((Number(ui.uiMaxFilesizeKb.text)) && (!currentImageOnly));
                 ui.uiSaveFolder.visible = (ui.uiSaveInFolder.value);
                 ui.uiSubfolderOptionTxt.visible = ui.uiSubfolderOption.visible = (! ui.uiAskOnSave.value);
-                ui.uiChooseSaveOptionTxt.visible = ! ((ui.uiAskOnSave.value)  || (ui.uiSaveToSourceFolder.value) || (ui.uiSaveInFolder.value && (ui.uiSaveFolder.text != "")))
 
                 var validPresetName = (
                     (ui.uiPresetName.text.indexOf("<") < 0)
                         && (ui.uiPresetName.text.indexOf(">") < 0)
                 );
-                var validMaxWidthPx = (ui.uiMaxWidthPx.text != "") && Number(ui.uiMaxWidthPx.text);
-                var validMaxHeightPx = (ui.uiMaxHeightPx.text != "") && Number(ui.uiMaxHeightPx.text);
+
+                validateField(ui.uiPresetName, validPresetName,
+                    "Name must not contain < or >.");
+                validateField(ui.uiMaxWidthPx, (ui.uiMaxWidthPx.text != ""),
+                    "Width required.");
+                validateField(ui.uiMaxWidthPx, (Number(ui.uiMaxWidthPx.text)),
+                    "Width must be a whole number of pixels.");
+                validateField(ui.uiMaxHeightPx, (ui.uiMaxHeightPx.text != ""),
+                    "Height required.");
+                validateField(ui.uiMaxHeightPx, (Number(ui.uiMaxHeightPx.text)),
+                    "Height must be a whole number of pixels.");
+
                 var validMaxFilesizeKb = ((ui.uiMaxFilesizeKb.text == "") || (Number(ui.uiMaxFilesizeKb.text)));
+                validateField(ui.uiMaxFilesizeKb, validMaxFilesizeKb,
+                    "Maximum filesize must be a whole number of kilobytes or blank.");
+
                 var validOutputDestination = (
                     ((currentImageOnly)  || (ui.uiSaveToSourceFolder.value) || (ui.uiSaveInFolder.value))
                         && ((ui.uiAskOnSave.value) || (ui.uiSaveToSourceFolder.value) || (ui.uiSaveFolder.text != ""))
                 );
+                validate(validOutputDestination,
+                    "An option for where to save must be specified.");
 
-                ui.uiOkBtn.enabled = (
-                    validPresetName
-                        && validMaxWidthPx
-                        && validMaxHeightPx
-                        && validMaxFilesizeKb
-                        && validOutputDestination
-                );
-                    
                 if (
                     ui.uiPostResizeSharpening.selection
                     == gPostResizeSharpeningIds.indexAt("sharpenForDigitalBFraser")
@@ -1729,24 +1747,34 @@ function showUiPreset (mainWindow, preset, allowPresetDelete) {
                         ||
                         ((0 <= Number(ui.uiPostResizeSharpeningOpt.text)) && (100 >= Number(ui.uiPostResizeSharpeningOpt.text)))
                     );
-                    ui.uiOkBtn.enabled = ui.uiOkBtn.enabled && validPostResizeSharpeningOpt;
+                    validateField(ui.validPostResizeSharpeningOpt, validPostResizeSharpeningOpt,
+                        "Opacity of 0 to 100 required for Bruce Fraser digital sharpening step.");
                 };
 
                 if (ui.uiPlaceOnCanvasBehaviour.selection == gPlaceOnCanvasBehaviourIds.indexAt('borders-min')) {
-                    ui.uiOkBtn.enabled = ui.uiOkBtn.enabled
-                        &&  ((ui.uiCanvasOpt1.text == "") || (0 <= Number(ui.uiCanvasOpt1.text)))
-                        && ((ui.uiCanvasOpt2.text == "") || (0 <= Number(ui.uiCanvasOpt2.text)))
-                        && ((ui.uiCanvasOpt3.text == "") || (0 <= Number(ui.uiCanvasOpt3.text)))
-                        && ((ui.uiCanvasOpt4.text == "") || (0 <= Number(ui.uiCanvasOpt4.text)))
+                    validate((0 <= Number(ui.uiCanvasOpt1.text)),
+                        "Top border is specified by number of pixels.");
+                    validate((0 <= Number(ui.uiCanvasOpt2.text)),
+                        "Bottom border is specified by number of pixels.");
+                    validate((0 <= Number(ui.uiCanvasOpt3.text)),
+                        "Left border is specified by number of pixels.");
+                    validate((0 <= Number(ui.uiCanvasOpt4.text)),
+                        "Right border is specified by number of pixels.");
                 };
 
                 if (ui.uiPlaceOnCanvasBehaviour.selection == gPlaceOnCanvasBehaviourIds.indexAt('scale-and-offset')) {
-                    ui.uiOkBtn.enabled = ui.uiOkBtn.enabled
-                        &&  ((ui.uiCanvasOpt1.text == "") || (0 < Number(ui.uiCanvasOpt1.text)))
-                        && ((ui.uiCanvasOpt2.text == "") || (! isNaN(Number(ui.uiCanvasOpt2.text)))) // can be less zero
-                        && ((ui.uiCanvasOpt3.text == "") || (! isNaN(Number(ui.uiCanvasOpt3.text)))) // can be less zero
+                    validate((0 <= Number(ui.uiCanvasOpt1.text)),
+                        "Scaling factor must be a percentage.");
+                    validate((0 <= Number(ui.uiCanvasOpt2.text)),
+                        "Horizontal shift must be a positive or negative number.");
+                    validate((0 <= Number(ui.uiCanvasOpt3.text)),
+                        "Vertical shift must be a positive or negative number.");
                 };
                             
+                ui.uiChooseSaveOptionTxt.visible = (errors != null)
+                ui.uiChooseSaveOptionTxt.text = errors
+                ui.uiOkBtn.enabled = (!errors);
+
                 break;
 
             case "Check save behaviour option":
