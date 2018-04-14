@@ -1699,22 +1699,37 @@ function showUiPreset (mainWindow, preset, allowPresetDelete) {
                 ui.uiSaveFolder.visible = (ui.uiSaveInFolder.value);
                 ui.uiSubfolderOptionTxt.visible = ui.uiSubfolderOption.visible = (! ui.uiAskOnSave.value);
                 ui.uiChooseSaveOptionTxt.visible = ! ((ui.uiAskOnSave.value)  || (ui.uiSaveToSourceFolder.value) || (ui.uiSaveInFolder.value && (ui.uiSaveFolder.text != "")))
-                
-                ui.uiOkBtn.enabled = ( (ui.uiPresetName.text.indexOf("<") < 0) && (ui.uiPresetName.text.indexOf(">") < 0)
-                    && Number(ui.uiMaxWidthPx.text) && Number(ui.uiMaxHeightPx.text)
-                    && (ui.uiMaxWidthPx.text != "") && (ui.uiMaxHeightPx.text != "")
-                    && ((ui.uiMaxFilesizeKb.text == "") || (Number(ui.uiMaxFilesizeKb.text)))
-                    && ((currentImageOnly)  || (ui.uiSaveToSourceFolder.value) || (ui.uiSaveInFolder.value))
-                    && ((ui.uiAskOnSave.value) || (ui.uiSaveToSourceFolder.value) || (ui.uiSaveFolder.text != ""))
+
+                var validPresetName = (
+                    (ui.uiPresetName.text.indexOf("<") < 0)
+                        && (ui.uiPresetName.text.indexOf(">") < 0)
+                );
+                var validMaxWidthPx = (ui.uiMaxWidthPx.text != "") && Number(ui.uiMaxWidthPx.text);
+                var validMaxHeightPx = (ui.uiMaxHeightPx.text != "") && Number(ui.uiMaxHeightPx.text);
+                var validMaxFilesizeKb = ((ui.uiMaxFilesizeKb.text == "") || (Number(ui.uiMaxFilesizeKb.text)));
+                var validOutputDestination = (
+                    ((currentImageOnly)  || (ui.uiSaveToSourceFolder.value) || (ui.uiSaveInFolder.value))
+                        && ((ui.uiAskOnSave.value) || (ui.uiSaveToSourceFolder.value) || (ui.uiSaveFolder.text != ""))
+                );
+
+                ui.uiOkBtn.enabled = (
+                    validPresetName
+                        && validMaxWidthPx
+                        && validMaxHeightPx
+                        && validMaxFilesizeKb
+                        && validOutputDestination
                 );
                     
-                if (ui.uiPostResizeSharpening.selection == gPostResizeSharpeningIds.indexAt("sharpenForDigitalBFraser")) {
-                    ui.uiOkBtn.enabled = ui.uiOkBtn.enabled
-                        &&  (
-                            (ui.uiPostResizeSharpeningOpt.text == "")
-                            ||
-                            ((0 <= Number(ui.uiPostResizeSharpeningOpt.text)) && (100 >= Number(ui.uiPostResizeSharpeningOpt.text)))
-                        )
+                if (
+                    ui.uiPostResizeSharpening.selection
+                    == gPostResizeSharpeningIds.indexAt("sharpenForDigitalBFraser")
+                ) {
+                    var validPostResizeSharpeningOpt = (
+                        (ui.uiPostResizeSharpeningOpt.text == "")
+                        ||
+                        ((0 <= Number(ui.uiPostResizeSharpeningOpt.text)) && (100 >= Number(ui.uiPostResizeSharpeningOpt.text)))
+                    );
+                    ui.uiOkBtn.enabled = ui.uiOkBtn.enabled && validPostResizeSharpeningOpt;
                 };
 
                 if (ui.uiPlaceOnCanvasBehaviour.selection == gPlaceOnCanvasBehaviourIds.indexAt('borders-min')) {
