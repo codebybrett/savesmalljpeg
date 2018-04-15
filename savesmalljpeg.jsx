@@ -361,6 +361,15 @@ function PhotoshopTool () {
     else
         this.openableFileTypes = app.windowsFileTypes;
 
+    this.isDocumentActive = function () {
+        var result = true;
+        try {app.activeDocument} // test if there is a document open
+        catch (e) {
+            result = false;
+        };
+        return result;
+    }
+
     this.canOpenInPhotoshop = function (f) {
         var ext = getFileExtensionOrType(f);
         if (!ext) return false;
@@ -1095,7 +1104,9 @@ function showUiMain (runOptions, settings) {
               
             this.etName.text = "";
             this.saveBtn.text = "Save As..."
-            this.allowOk = function () {return true};
+            this.allowOk = function () {
+                return (psTool.isDocumentActive())
+            };
             locationTxt = "You will be prompted to choose a folder and enter an image name.";
             
         } else {
@@ -1110,7 +1121,10 @@ function showUiMain (runOptions, settings) {
                     this.etName.visible = true;
                     this.saveBtn.text = "Save"
                     this.allowOk = function () {
-                        return (this.etName.text != "")
+                        return (
+                            (psTool.isDocumentActive())
+                            && (this.etName.text != "")
+                        )
                     };  // Allow ok once a name has been input.
                     
                 } else {
@@ -1556,8 +1570,8 @@ function showUiPreset (mainWindow, preset, allowPresetDelete) {
                         alignment: 'left', \
                         alignChildren: 'left', \
                         rbAskOnSave:RadioButton{properties: {name: 'uiAskOnSaveOption'}, text:'Ask before saving.', helpTip: 'You will be prompted with a normal SaveAs style prompt.'},\
-                        rbSaveToSourceFolder:RadioButton{properties: {name: 'uiSaveToSourceFolderOption'}, text:'Save to original folder.', helpTip: 'Files are saved to the same folder as the original or subfolder of that folder if specified.'},\
-                        rbInFolder:RadioButton{properties: {name: 'uiSaveInFolderOption'}, text:'This folder:' , helpTip: 'Choose a folder to be used always for this preset.'}\
+                        rbSaveToSourceFolder:RadioButton{properties: {name: 'uiSaveToSourceFolderOption'}, text:'Original folder.', helpTip: 'Files are saved to the same folder as the original or optionally a subfolder of that.'},\
+                        rbInFolder:RadioButton{properties: {name: 'uiSaveInFolderOption'}, text:'This folder:' , helpTip: 'Always use your choosen folder.'}\
                     },\
                     btnBrowseForFolder:Button{properties: {name: 'uiBrowseForFolder'}, alignment: ['right','bottom'], text:'Choose folder...' , helpTip: 'Browse for a folder.'}\
                 }\
@@ -1756,12 +1770,15 @@ function showUiPreset (mainWindow, preset, allowPresetDelete) {
                     == gPostResizeSharpeningIds.indexAt("sharpenForDigitalBFraser")
                 ) {
                     var validPostResizeSharpeningOpt = (
-                        (ui.uiPostResizeSharpeningOpt.text == "")
-                        ||
-                        ((0 <= Number(ui.uiPostResizeSharpeningOpt.text)) && (100 >= Number(ui.uiPostResizeSharpeningOpt.text)))
+                        (ui.uiPostResizeSharpeningOpt.text != "")
+                        &&
+                        (
+                            (1 <= Number(ui.uiPostResizeSharpeningOpt.text))
+                            && (100 >= Number(ui.uiPostResizeSharpeningOpt.text))
+                        )
                     );
                     validateField(ui.validPostResizeSharpeningOpt, validPostResizeSharpeningOpt,
-                        "Opacity of 0 to 100 required for Bruce Fraser digital sharpening step.");
+                        "Opacity of 1 to 100 required for Bruce Fraser digital sharpening step.");
                 };
 
                 if (ui.uiPlaceOnCanvasBehaviour.selection == gPlaceOnCanvasBehaviourIds.indexAt('borders-min')) {
@@ -2331,7 +2348,7 @@ activeDocumentHandler.saveSmallJPEG = function (imageFile, imageParameters) {
 // Main
 // ================================================================================
 
-var pstool;
+var psTool;
 
 try {
 
@@ -2381,8 +2398,7 @@ try {
         
         // SINGLE IMAGE MODE
 
-        try {app.activeDocument} // test if there is a document open
-        catch (e) {
+        if (!psTool.isDocumentActive()) {
             alert ("No image open.");
             throw "Script cancelled."
         }
