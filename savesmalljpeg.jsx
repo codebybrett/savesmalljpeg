@@ -1468,7 +1468,7 @@ function showUiPreset (mainWindow, preset, allowPresetDelete) {
                     statictext1:StaticText{ text:'Note:' },\
                     etPresetNotes:EditText{ properties: {name: 'uiPresetNotes'}, characters: 80, text:'' , helpTip: 'Enter any notes you would like to make about this preset.'}\
                 }\
-                stRepetitionWarning:StaticText{properties: {name: 'uiSaveRepeatWarning'}, justify: 'center', text:'Every file will be saved repeatedly to achieve max. filesize - this could take a while.' }\
+                stRepetitionWarning:StaticText{properties: {name: 'uiSaveRepeatWarning'}, justify: 'center', text:'Every file will be saved repeatedly to achieve maximum quality within filesize.' }\
             },\
             gImageOptionsPnl: Panel { \
                 type: 'tabbedpanel',\
@@ -1555,9 +1555,9 @@ function showUiPreset (mainWindow, preset, allowPresetDelete) {
                         orientation: 'column',\
                         alignment: 'left', \
                         alignChildren: 'left', \
-                        rbAskOnSave:RadioButton{properties: {name: 'uiAskOnSave'}, text:'Ask before saving.', helpTip: 'You will be prompted with a normal SaveAs style prompt.'},\
-                        rbSaveToSourceFolder:RadioButton{properties: {name: 'uiSaveToSourceFolder'}, text:'Save to original folder.', helpTip: 'Files are saved to the same folder as the original or subfolder of that folder if specified.'},\
-                        rbInFolder:RadioButton{properties: {name: 'uiSaveInFolder'}, text:'This folder:' , helpTip: 'Choose a folder to be used always for this preset.'}\
+                        rbAskOnSave:RadioButton{properties: {name: 'uiAskOnSaveOption'}, text:'Ask before saving.', helpTip: 'You will be prompted with a normal SaveAs style prompt.'},\
+                        rbSaveToSourceFolder:RadioButton{properties: {name: 'uiSaveToSourceFolderOption'}, text:'Save to original folder.', helpTip: 'Files are saved to the same folder as the original or subfolder of that folder if specified.'},\
+                        rbInFolder:RadioButton{properties: {name: 'uiSaveInFolderOption'}, text:'This folder:' , helpTip: 'Choose a folder to be used always for this preset.'}\
                     },\
                     btnBrowseForFolder:Button{properties: {name: 'uiBrowseForFolder'}, alignment: ['right','bottom'], text:'Choose folder...' , helpTip: 'Browse for a folder.'}\
                 }\
@@ -1630,11 +1630,11 @@ function showUiPreset (mainWindow, preset, allowPresetDelete) {
     // --------------------------------------------------------------------------------
     
     // Handlers
-    ui.uiAskOnSave.onClick = function () {
+    ui.uiAskOnSaveOption.onClick = function () {
         win.handleMsg({type: "Check Ok"}) };
-    ui.uiSaveToSourceFolder.onClick = function ()  { // 1.10: Added this option.
+    ui.uiSaveToSourceFolderOption.onClick = function ()  { // 1.10: Added this option.
         win.handleMsg({type: "Check Ok"}) };
-    ui.uiSaveInFolder.onClick = function () {
+    ui.uiSaveInFolderOption.onClick = function () {
         win.handleMsg({type: "Check Ok"}) };
     ui.uiBrowseForFolder.onClick = function () {
         win.handleMsg({type: "Select folder"});
@@ -1713,12 +1713,12 @@ function showUiPreset (mainWindow, preset, allowPresetDelete) {
                 };
 
                 ui.uiSaveRepeatWarning.visible = ((Number(ui.uiMaxFilesizeKb.text)) && (!currentImageOnly));
-                ui.uiSaveFolder.visible = (ui.uiSaveInFolder.value);
-                ui.uiSubfolderOptionTxt.visible = ui.uiSubfolderOption.visible = (! ui.uiAskOnSave.value);
+                ui.uiSaveFolder.visible = (ui.uiSaveInFolderOption.value);
+                ui.uiSubfolderOptionTxt.visible = ui.uiSubfolderOption.visible = (! ui.uiAskOnSaveOption.value);
 
                 var validPresetName = (
                     (ui.uiPresetName.text.indexOf("<") < 0)
-                        && (ui.uiPresetName.text.indexOf(">") < 0)
+                    && (ui.uiPresetName.text.indexOf(">") < 0)
                 );
 
                 validateField(ui.uiPresetName, validPresetName,
@@ -1732,17 +1732,25 @@ function showUiPreset (mainWindow, preset, allowPresetDelete) {
                 validateField(ui.uiMaxHeightPx, (Number(ui.uiMaxHeightPx.text)),
                     "Height must be a whole number of pixels.");
 
-                var validMaxFilesizeKb = ((ui.uiMaxFilesizeKb.text == "") || (Number(ui.uiMaxFilesizeKb.text)));
-                validateField(ui.uiMaxFilesizeKb, validMaxFilesizeKb,
-                    "Maximum filesize must be a whole number of kilobytes or blank.");
+                validateField(ui.uiMaxFilesizeKb,
+                    (
+                        (ui.uiMaxFilesizeKb.text == "")
+                        || (Number(ui.uiMaxFilesizeKb.text))
+                    ), "Maximum filesize must be a whole number of kilobytes or blank.");
 
-                var validOutputDestination = (
-                    ((currentImageOnly)  || (ui.uiSaveToSourceFolder.value) || (ui.uiSaveInFolder.value))
-                        && ((ui.uiAskOnSave.value) || (ui.uiSaveToSourceFolder.value) || (ui.uiSaveFolder.text != ""))
+                validate(
+                    (
+                        ui.uiAskOnSaveOption.value
+                        || ui.uiSaveToSourceFolderOption.value
+                        || ui.uiSaveInFolderOption.value
+                    ), "An option for where to save must be specified."
                 );
-                validate(validOutputDestination,
-                    "An option for where to save must be specified.");
 
+                if (ui.uiSaveInFolderOption.value)
+                    validate(
+                        (ui.uiSaveFolder.text != ""),
+                        "A folder to save to must be specified.");
+                
                 if (
                     ui.uiPostResizeSharpening.selection
                     == gPostResizeSharpeningIds.indexAt("sharpenForDigitalBFraser")
@@ -1783,9 +1791,9 @@ function showUiPreset (mainWindow, preset, allowPresetDelete) {
                 break;
 
             case "Check save behaviour option":
-                ui.uiAskOnSave.enabled = (currentImageOnly);
-                // ui.uiSaveInFolder.value = true;
-                ui.uiAskOnSave.value = false;
+                ui.uiAskOnSaveOption.enabled = (currentImageOnly);
+                // ui.uiSaveInFolderOption.value = true;
+                ui.uiAskOnSaveOption.value = false;
                 ui.uiNamingBehaviour.visible = (!currentImageOnly)
                 if (currentImageOnly)
                     ui.uiNamingBehaviour.selection = gNamingBehaviourIds.indexAt("original"); // Reset to original naming.
@@ -1822,7 +1830,7 @@ function showUiPreset (mainWindow, preset, allowPresetDelete) {
                   startFolder.changePath("..");
                 var usrFolder = startFolder.selectDlg ("Choose a folder to store your images:");
                 if (usrFolder) {
-                    ui.uiSaveInFolder.value = true;
+                    ui.uiSaveInFolderOption.value = true;
                     ui.uiSaveFolder.text = usrFolder.fullName;
                 };
                 break;
@@ -1863,11 +1871,11 @@ function showUiPreset (mainWindow, preset, allowPresetDelete) {
     
     switch (preset.saveBehaviour)  {
         case "ask":
-            ui.uiAskOnSave.value = true; break;
+            ui.uiAskOnSaveOption.value = true; break;
         case "saveToSourceFolder":
-            ui.uiSaveToSourceFolder.value = true; break;
+            ui.uiSaveToSourceFolderOption.value = true; break;
         case "saveToSaveFolder":
-            ui.uiSaveInFolder.value = true; break;
+            ui.uiSaveInFolderOption.value = true; break;
     };
 
     ui.uiSaveFolder.text = preset.saveFolder;
@@ -1889,8 +1897,8 @@ function showUiPreset (mainWindow, preset, allowPresetDelete) {
     
     if (1==ret) {
         
-        if ((ui.uiSaveFolder.text == "")  &&  (ui.uiSaveInFolder.value))
-            ui.uiAskOnSave.value = true;
+        if ((ui.uiSaveFolder.text == "")  &&  (ui.uiSaveInFolderOption.value))
+            ui.uiAskOnSaveOption.value = true;
             
         preset.name = ui.uiPresetName.text;
         preset.colourProfileName =ui.uiColourProfile.text;
@@ -1916,12 +1924,12 @@ function showUiPreset (mainWindow, preset, allowPresetDelete) {
             preset.smallImageCheck = "warn"
         else
             preset.smallImageCheck = "";
-        if (ui.uiAskOnSave.value) {
+        if (ui.uiAskOnSaveOption.value) {
             preset.saveBehaviour = "ask";
             ui.uiSaveFolder.text = "";
             ui.uiSubfolderOption.selection = gSubfolderOptionTxtList.indexAt("none");
         } else
-                if (ui.uiSaveToSourceFolder.value) {
+                if (ui.uiSaveToSourceFolderOption.value) {
                     ui.uiSaveFolder.text = "";
                     preset.saveBehaviour = "saveToSourceFolder"; // 1.10: Add this option explicit in the settings.
                 } else
