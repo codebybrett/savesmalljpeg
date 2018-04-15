@@ -244,7 +244,7 @@ var gPostResizeSharpeningIds = [
 ];
 
 var gPostResizeSharpeningTxtList = [
-    'No seperate sharpening step',
+    'No separate sharpening step',
     'Sharpen for digital (Bruce Fraser method)'
 ];
 
