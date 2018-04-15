@@ -1406,6 +1406,8 @@ function showUiPreset (mainWindow, preset, allowPresetDelete) {
     // Preset dialog resource string
     // --------------------------------------------------------------------------------
     
+    // Some StaticText have a text of "<size>" set so layout assigns a reasonable width.
+
     var uiPreset = // dialog resource object
         "dialog { \
             text: 'Define Preset',\
@@ -1477,7 +1479,7 @@ function showUiPreset (mainWindow, preset, allowPresetDelete) {
                     orientation: 'column',\
                     alignChildren: 'fill',\
                     margins: 15,\
-                    ddlimageActionOne:DropDownList{properties: {name: 'uiimageActionOne'}, helpTip: 'You can choose to run a photoshop action.'}\
+                    ddlimageActionOne:DropDownList{properties: {name: 'uiImageActionOne'}, helpTip: 'You can choose to run a photoshop action.'}\
                 },\
                 gImageReductionTab: Panel {\
                     type: 'tab',\
@@ -1487,16 +1489,16 @@ function showUiPreset (mainWindow, preset, allowPresetDelete) {
                     margins: 15,\
                     ddlImageRotationOptions:DropDownList{properties: {name: 'uiImageRotationOptions'}, helpTip: 'Options for rotating the image.'},\
                     ddlReductionMethodOption:DropDownList{properties: {name: 'uiReductionMethodOption'}, helpTip: 'The method used to resize the image. Photoshop describes Bicubic Sharper as best for reduction, but it sharpens too much for my taste. I prefer Bicubic with a separate sharpening step.'},\
-                      gSharpeningOptions: Group { \
-                            orientation: 'row',\
-                            alignChildren: 'fill',\
-                            ddlpostResizeSharpening:DropDownList{properties: {name: 'uiPostResizeSharpening'}, helpTip: 'What to do just before saving.'},\
-                            g0: Group {\
-                                alignChildren: ['right','center'],\
-                                statictext1:StaticText{ properties: {name: 'uiPostResizeSharpeningOptTxt'}, characters: 6, justify: 'right', text:'opacity:' },\
-                                etCanvasOpt1:EditText{ properties: {name: 'uiPostResizeSharpeningOpt'}, characters: 5, text:''}\
-                            }\
-                      }\
+                    gSharpeningOptions: Group { \
+                        orientation: 'row',\
+                        alignChildren: 'fill',\
+                        ddlpostResizeSharpening:DropDownList{properties: {name: 'uiPostResizeSharpening'}, helpTip: 'What to do just before saving.'},\
+                        g0: Group {\
+                            alignChildren: ['right','center'],\
+                            statictext1:StaticText{ properties: {name: 'uiPostResizeSharpeningOptTxt'}, characters: 6, justify: 'right', text:'opacity:' },\
+                            etCanvasOpt1:EditText{ properties: {name: 'uiPostResizeSharpeningOpt'}, characters: 5, text:''}\
+                        }\
+                    }\
                 },\
                 gPresentationOptionsTab: Panel { \
                     type: 'tab',\
@@ -1512,22 +1514,22 @@ function showUiPreset (mainWindow, preset, allowPresetDelete) {
                         ddlBackgroundOptions:DropDownList{properties: {name: 'uiBackgroundOptions'}, helpTip: 'Background options.'},\
                         g0: Group {\
                             alignChildren: ['right','center'],\
-                            statictext1:StaticText{ properties: {name: 'uiCanvasOpt1Txt'}, characters: 6, justify: 'right', text:'?:' },\
+                            statictext1:StaticText{ properties: {name: 'uiCanvasOpt1Txt'}, justify: 'right', text:'<size>' },\
                             etCanvasOpt1:EditText{ properties: {name: 'uiCanvasOpt1'}, characters: 5, text:''}\
                         },\
                         g1: Group {\
                             alignChildren: ['right','center'],\
-                            statictext1:StaticText{ properties: {name: 'uiCanvasOpt2Txt'}, characters: 6, justify: 'right', text:'?:' },\
+                            statictext1:StaticText{ properties: {name: 'uiCanvasOpt2Txt'}, justify: 'right', text:'<size>' },\
                             etCanvasOpt2:EditText{ properties: {name: 'uiCanvasOpt2'}, characters: 5, text:''}\
                         },\
                         g2: Group {\
                             alignChildren: ['right','center'],\
-                            statictext1:StaticText{ properties: {name: 'uiCanvasOpt3Txt'}, characters: 6, justify: 'right', text:'?:' },\
+                            statictext1:StaticText{ properties: {name: 'uiCanvasOpt3Txt'}, justify: 'right', text:'<size>' },\
                             etCanvasOpt3:EditText{ properties: {name: 'uiCanvasOpt3'}, characters: 5, text:''}\
                         },\
                         g3: Group {\
                             alignChildren: ['right','center'],\
-                            statictext1:StaticText{ properties: {name: 'uiCanvasOpt4Txt'}, characters: 6, justify: 'right', text:'?:' },\
+                            statictext1:StaticText{ properties: {name: 'uiCanvasOpt4Txt'}, justify: 'right', text:'<size>' },\
                             etCanvasOpt4:EditText{ properties: {name: 'uiCanvasOpt4'}, characters: 5, text:''}\
                         }\
                     },\
@@ -1596,11 +1598,14 @@ function showUiPreset (mainWindow, preset, allowPresetDelete) {
     
     var ui = new Object();
     addControlsToObject (win, ui);
-
+    
+    // Select resizing tab initially.
+    win.gImageOptionsPnl.selection = win.gImageOptionsPnl.gImageReductionTab
+    
     for (var i=0; i < gInputOptionTxtList.length; i++)
         ui.uiInputOption.add('item',gInputOptionTxtList[i]);
     for (var i=0; i < gActionOptions.length; i++)
-        ui.uiimageActionOne.add('item',gActionOptions[i].text);
+        ui.uiImageActionOne.add('item',gActionOptions[i].text);
     for (var i=0; i < gActionOptions.length; i++)
         ui.uiplacementAction.add('item',gActionOptions[i].text);
     for (var i=0; i < gActionOptions.length; i++)
@@ -1839,7 +1844,7 @@ function showUiPreset (mainWindow, preset, allowPresetDelete) {
     ui.uiSmallImageWarning.value = (preset.smallImageCheck == "warn");
     ui.uiPresetNotes.text = preset.presetNotes;
     ui.uiInputOption.selection = (preset.inputOption == "currentImage") ? 0 : 1;
-    ui.uiimageActionOne.selection = gActionIds.indexAt("action: " + preset.imageActionOneName + " actionSet: " + preset.imageActionOneSet);
+    ui.uiImageActionOne.selection = gActionIds.indexAt("action: " + preset.imageActionOneName + " actionSet: " + preset.imageActionOneSet);
     ui.uiplacementAction.selection = gActionIds.indexAt("action: " + preset.placementActionName + " actionSet: " + preset.placementActionSet);
     ui.uibackgroundActionLast.selection = gActionIds.indexAt("action: " + preset.backgroundActionLastName + " actionSet: " + preset.backgroundActionLastSet);
     ui.uiReductionMethodOption.selection = gReductionMethodOptionIds.indexAt(preset.reductionMethodOption);
@@ -1894,8 +1899,8 @@ function showUiPreset (mainWindow, preset, allowPresetDelete) {
         preset.maxFilesizeKb = ui.uiMaxFilesizeKb.text;
         preset.presetNotes = ui.uiPresetNotes.text;
         preset.inputOption = gInputOptionIds[ui.uiInputOption.selection.index];
-        preset.imageActionOneSet = gActionOptions[ui.uiimageActionOne.selection.index].actionSetName;
-        preset.imageActionOneName = gActionOptions[ui.uiimageActionOne.selection.index].actionName;
+        preset.imageActionOneSet = gActionOptions[ui.uiImageActionOne.selection.index].actionSetName;
+        preset.imageActionOneName = gActionOptions[ui.uiImageActionOne.selection.index].actionName;
         preset.placementActionSet = gActionOptions[ui.uiplacementAction.selection.index].actionSetName;
         preset.placementActionName = gActionOptions[ui.uiplacementAction.selection.index].actionName;
         preset.backgroundActionLastSet = gActionOptions[ui.uibackgroundActionLast.selection.index].actionSetName;
