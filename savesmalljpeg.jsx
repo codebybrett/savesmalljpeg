@@ -1714,50 +1714,64 @@ function showUiPreset (mainWindow, preset, allowPresetDelete) {
         
         switch (msg.type) {
 
-            case "Check Ok":  // Enables okBtn if there are numbers for width, height and filesize (or filesize blank)
+            case "Check Ok":
 
+                ui.uiSaveRepeatWarning.visible = ((Number(ui.uiMaxFilesizeKb.text)) && (!currentImageOnly));
+                ui.uiSaveFolder.visible = (ui.uiSaveInFolderOption.value);
+                ui.uiSubfolderOptionTxt.visible = ui.uiSubfolderOption.visible = (! ui.uiAskOnSaveOption.value);
+
+                // Positively state the requirements that must be met for the preset
+                // and report those requirements not met.
+                // This means requirements both become visible to the user and the
+                // messages serve as documentation for the script.
                 var errors = null;
                 var validate = function (condition, desc) {
                     if (!condition) {
                         if (!errors) {errors = desc}
                     }
                 };
-                var validateField = function (ui, condition, desc) {
-                    validate(condition, desc)
-                };
 
-                ui.uiSaveRepeatWarning.visible = ((Number(ui.uiMaxFilesizeKb.text)) && (!currentImageOnly));
-                ui.uiSaveFolder.visible = (ui.uiSaveInFolderOption.value);
-                ui.uiSubfolderOptionTxt.visible = ui.uiSubfolderOption.visible = (! ui.uiAskOnSaveOption.value);
-
-                var validPresetName = (
-                    (ui.uiPresetName.text.indexOf("<") < 0)
-                    && (ui.uiPresetName.text.indexOf(">") < 0)
+                validate(
+                    (
+                        (ui.uiPresetName.text.indexOf("<") < 0)
+                        && (ui.uiPresetName.text.indexOf(">") < 0)
+                    ),
+                    "Name must not contain < or >."
                 );
 
-                validateField(ui.uiPresetName, validPresetName,
-                    "Name must not contain < or >.");
-                validateField(ui.uiMaxWidthPx, (ui.uiMaxWidthPx.text != ""),
-                    "Width required.");
-                validateField(ui.uiMaxWidthPx, (Number(ui.uiMaxWidthPx.text)),
-                    "Width must be a whole number of pixels.");
-                validateField(ui.uiMaxHeightPx, (ui.uiMaxHeightPx.text != ""),
-                    "Height required.");
-                validateField(ui.uiMaxHeightPx, (Number(ui.uiMaxHeightPx.text)),
-                    "Height must be a whole number of pixels.");
+                validate(
+                    (ui.uiMaxWidthPx.text != ""),
+                    "Width required."
+                );
 
-                validateField(ui.uiMaxFilesizeKb,
+                validate(
+                    (Number(ui.uiMaxWidthPx.text)),
+                    "Width must be a whole number of pixels."
+                );
+                validate(
+                    (ui.uiMaxHeightPx.text != ""),
+                    "Height required."
+                );
+
+                validate(
+                    (Number(ui.uiMaxHeightPx.text)),
+                    "Height must be a whole number of pixels."
+                );
+
+                validate(
                     (
                         (ui.uiMaxFilesizeKb.text == "")
                         || (Number(ui.uiMaxFilesizeKb.text))
-                    ), "Maximum filesize must be a whole number of kilobytes or blank.");
+                    ),
+                    "Maximum filesize must be a whole number of kilobytes or blank.");
 
                 validate(
                     (
                         ui.uiAskOnSaveOption.value
                         || ui.uiSaveToSourceFolderOption.value
                         || ui.uiSaveInFolderOption.value
-                    ), "An option for where to save must be specified."
+                    ),
+                    "An option for where to save must be specified."
                 );
 
                 if (ui.uiSaveInFolderOption.value)
@@ -1769,36 +1783,50 @@ function showUiPreset (mainWindow, preset, allowPresetDelete) {
                     ui.uiPostResizeSharpening.selection
                     == gPostResizeSharpeningIds.indexAt("sharpenForDigitalBFraser")
                 ) {
-                    var validPostResizeSharpeningOpt = (
-                        (ui.uiPostResizeSharpeningOpt.text != "")
-                        &&
+                    validate(
                         (
-                            (1 <= Number(ui.uiPostResizeSharpeningOpt.text))
-                            && (100 >= Number(ui.uiPostResizeSharpeningOpt.text))
-                        )
+                            (ui.uiPostResizeSharpeningOpt.text != "")
+                            && (
+                                (1 <= Number(ui.uiPostResizeSharpeningOpt.text))
+                                && (100 >= Number(ui.uiPostResizeSharpeningOpt.text))
+                            )
+                        ),
+                        "Opacity of 1 to 100 required for Bruce Fraser digital sharpening step."
                     );
-                    validateField(ui.validPostResizeSharpeningOpt, validPostResizeSharpeningOpt,
-                        "Opacity of 1 to 100 required for Bruce Fraser digital sharpening step.");
                 };
 
                 if (ui.uiPlaceOnCanvasBehaviour.selection == gPlaceOnCanvasBehaviourIds.indexAt('borders-min')) {
-                    validate((0 <= Number(ui.uiCanvasOpt1.text)),
-                        "Top border is specified by number of pixels.");
-                    validate((0 <= Number(ui.uiCanvasOpt2.text)),
-                        "Bottom border is specified by number of pixels.");
-                    validate((0 <= Number(ui.uiCanvasOpt3.text)),
-                        "Left border is specified by number of pixels.");
-                    validate((0 <= Number(ui.uiCanvasOpt4.text)),
-                        "Right border is specified by number of pixels.");
+                    validate(
+                        (0 <= Number(ui.uiCanvasOpt1.text)),
+                        "Top border is specified by number of pixels."
+                    );
+                    validate(
+                        (0 <= Number(ui.uiCanvasOpt2.text)),
+                        "Bottom border is specified by number of pixels."
+                    );
+                    validate(
+                        (0 <= Number(ui.uiCanvasOpt3.text)),
+                        "Left border is specified by number of pixels."
+                    );
+                    validate(
+                        (0 <= Number(ui.uiCanvasOpt4.text)),
+                        "Right border is specified by number of pixels."
+                    );
                 };
 
                 if (ui.uiPlaceOnCanvasBehaviour.selection == gPlaceOnCanvasBehaviourIds.indexAt('scale-and-offset')) {
-                    validate((0 <= Number(ui.uiCanvasOpt1.text)),
-                        "Scaling factor must be a percentage.");
-                    validate((0 <= Number(ui.uiCanvasOpt2.text)),
-                        "Horizontal shift must be a positive or negative number.");
-                    validate((0 <= Number(ui.uiCanvasOpt3.text)),
-                        "Vertical shift must be a positive or negative number.");
+                    validate(
+                        (0 <= Number(ui.uiCanvasOpt1.text)),
+                        "Scaling factor must be a percentage."
+                    );
+                    validate(
+                        (0 <= Number(ui.uiCanvasOpt2.text)),
+                        "Horizontal shift must be a positive or negative number."
+                    );
+                    validate(
+                        (0 <= Number(ui.uiCanvasOpt3.text)),
+                        "Vertical shift must be a positive or negative number."
+                    );
                 };
                             
                 ui.uiChooseSaveOptionTxt.visible = (errors != null)
