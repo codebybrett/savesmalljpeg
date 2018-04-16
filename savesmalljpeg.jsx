@@ -1169,32 +1169,32 @@ function showUiMain (runOptions, settings) {
                 // Set ultimateSaveFolder only if we have some specification.
                 var ultimateSaveFolder = null;
                 if (savingToSourceFolder) {
-                    
                     if (currentImageOnly) {
                             // In current image mode we have the folder if the document is open and previously saved.
                             var documentIsOpen = false;
                             try {
                                 app.activeDocument; // Testing to see if the current image is open.
-                                ultimateSaveFolder = new Folder (app.activeDocument.path+ "./" + subfolderTxt);
+                                ultimateSaveFolder = new Folder (app.activeDocument.path);
+                                ultimateSaveFolder.changePath(subfolderTxt);
                                 documentIsOpen = true;
                             } catch (e) {}
                     } else {
                             // In batch mode - we will have the folder only if the process folder has been specified.
-                            if (this.etToProcess.text != '')
-                                ultimateSaveFolder = new Folder(this.etToProcess.text+ "./" + subfolderTxt);
+                            if (this.etToProcess.text != '') {
+                                ultimateSaveFolder = new Folder (this.etToProcess.text);
+                                ultimateSaveFolder.changePath(subfolderTxt);
+                            }
                     }
-                
                 } else {
-                    
                     // We should have a folder specified already in our preset.
-                    ultimateSaveFolder = new Folder(preset.saveFolder+ "./" + subfolderTxt)
-                    
+                    ultimateSaveFolder = new Folder (preset.saveFolder);
+                    ultimateSaveFolder.changePath(subfolderTxt);
                 };
 
                 // Set the text that describes the folder location
 
                 if (savingToSourceFolder  && !ultimateSaveFolder)
-                    if (subfolderTxt == '')
+                    if (subfolderTxt == "")
                         locationTxt = " the same folder as the original image."
                     else
                         locationTxt = " subfolder: " + subfolderTxt
@@ -1978,14 +1978,18 @@ function showUiPreset (mainWindow, preset, allowPresetDelete) {
             preset.saveBehaviour = "ask";
             ui.uiSaveFolder.data = null;
             ui.uiSaveFolder.text = "";
+            preset.saveFolder = "";
             ui.uiSubfolderOption.selection = gSubfolderOptionTxtList.indexAt("none");
         } else
                 if (ui.uiSaveToSourceFolderOption.value) {
                     ui.uiSaveFolder.data = null;
                     ui.uiSaveFolder.text = "";
+                    preset.saveFolder = "";
                     preset.saveBehaviour = "saveToSourceFolder"; // 1.10: Add this option explicit in the settings.
-                } else
+                } else {
                     preset.saveBehaviour = "saveToSaveFolder"; // 1.10: Made this option explicit in the settings.
+                    preset.saveFolder = ui.uiSaveFolder.data.fullName;
+                }
 
          if (   (ui.uiPlaceOnCanvasBehaviour.selection == gPlaceOnCanvasBehaviourIds.indexAt('none'))
                 || (ui.uiPlaceOnCanvasBehaviour.selection == gPlaceOnCanvasBehaviourIds.indexAt('extend-maximum'))
@@ -2003,7 +2007,6 @@ function showUiPreset (mainWindow, preset, allowPresetDelete) {
          preset.canvasOpt4 = ui.uiCanvasOpt4.text;
 
         preset.subFolderOption = gSubfolderOptionIds[ui.uiSubfolderOption.selection.index];
-        preset.saveFolder = ui.uiSaveFolder.data.fullName;
     };
 
     return ret
