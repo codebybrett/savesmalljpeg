@@ -945,8 +945,8 @@ function showUiMain (runOptions, settings) {
             stName:StaticText{bounds:[15,80,60,100] , text:'Name:' },\
             stProcess:StaticText{bounds:[15,80,60,100] , text:'Process:' },\
             etName:EditText{bounds:[70,80,570,100] , text:'' , helpTip: 'Enter the name for this image.'},\
-            etInputFolder:EditText{bounds:[70,80,570,100] , visible:false; text:'' ,properties:{readonly:true}, helpTip: 'The images located here will be processed.'},\
-            btnBrowseForFolder:Button{bounds:[585,80,660,100] , text:'Browse...' , helpTip: 'Browse for a folder to process.'},\
+            etToProcess:EditText{bounds:[70,80,570,100] , visible:false; text:'' ,properties:{readonly:true}, helpTip: 'The images located here will be processed.'},\
+            btnBrowse:Button{bounds:[585,80,660,100] , text:'Browse...' , helpTip: 'Browse for a folder to process.'},\
             stFolderDisplay:StaticText{bounds:[70,105,570,125] , text:''  ,properties:{readonly:true}, helpTip:'Your image will be stored here.'},\
             \
             cbOpenAfterSave:Checkbox{bounds:[70,150,300,171] , text:'open the new image after saving it', helpTip: 'Opens the image in Photoshop after it has been saved.' },\
@@ -1094,13 +1094,13 @@ function showUiMain (runOptions, settings) {
 
         // Updating this here, because we use the folder that was displayed to the user.
         this.runOptions.saveFolder = null;
-        this.etInputFolder.visible = false;
+        this.etToProcess.visible = false;
         this.etName.visible = false;
 
         if ("ask" == preset.saveBehaviour) {
             
-              // ---------------------------------
-              // Prompt for save location
+            // ---------------------------------
+            // Prompt for save location
               
             this.etName.text = "";
             this.saveBtn.text = "Save As..."
@@ -1111,8 +1111,8 @@ function showUiMain (runOptions, settings) {
             
         } else {
             
-               // ---------------------------------
-               // Save to a Folder
+                // ---------------------------------
+                // Save to a Folder
 
                 //  Set options according to processing mode.
                 if (currentImageOnly) {
@@ -1130,10 +1130,10 @@ function showUiMain (runOptions, settings) {
                 } else {
                     
                     //  Batch image mode.
-                    this.etInputFolder.visible = true;
+                    this.etToProcess.visible = true;
                     this.saveBtn.text = "Run"
                     this.allowOk = function () {
-                        return (this.etInputFolder.text != "")
+                        return (this.etToProcess.text != "")
                     };  // Allow Ok once processing folder is specified.
                 
                 };
@@ -1180,8 +1180,8 @@ function showUiMain (runOptions, settings) {
                             } catch (e) {}
                     } else {
                             // In batch mode - we will have the folder only if the process folder has been specified.
-                            if (this.etInputFolder.text != '')
-                                ultimateSaveFolder = new Folder(this.etInputFolder.text+ "./" + subfolderTxt);
+                            if (this.etToProcess.text != '')
+                                ultimateSaveFolder = new Folder(this.etToProcess.text+ "./" + subfolderTxt);
                     }
                 
                 } else {
@@ -1213,9 +1213,9 @@ function showUiMain (runOptions, settings) {
             
          };
         this.stName.visible = this.etName.visible;
-        this.stProcess.visible = this.etInputFolder.visible;
-        this.cbOpenAfterSave.visible = !this.etInputFolder.visible;
-        this.btnBrowseForFolder.visible = this.etInputFolder.visible;
+        this.stProcess.visible = this.etToProcess.visible;
+        this.cbOpenAfterSave.visible = !this.etToProcess.visible;
+        this.btnBrowse.visible = this.etToProcess.visible;
         this.stFolderDisplay.text = locationTxt;
         this.handleMsg({type: "Check Ok"})
     };
@@ -1268,7 +1268,7 @@ function showUiMain (runOptions, settings) {
         if (this.settings.userData.preset[currentIndex].inputOption == "currentImage")
             this.runOptions.inputName = this.etName.text
         else
-            this.runOptions.inputName = this.etInputFolder.text;
+            this.runOptions.inputName = this.etToProcess.text;
         this.runOptions.openAfterSave = this.cbOpenAfterSave.value;
     };
 
@@ -1288,7 +1288,7 @@ function showUiMain (runOptions, settings) {
     win.doneBtn.onClick = function () {
         this.parent.handleMsg({type: "Done"});
     };
-    win.btnBrowseForFolder.onClick = function () {
+    win.btnBrowse.onClick = function () {
         this.parent.handleMsg({type: "Select folder"});
     };
 
@@ -1352,15 +1352,15 @@ function showUiMain (runOptions, settings) {
 
             case "Select folder":
                   var startFolder;
-                  if (this.etInputFolder.text == "") {
+                  if (this.etToProcess.text == "") {
                       startFolder = Folder(settings.userData.lastProcessed);
                       // startFolder.changePath('..');  // Start dialog at parent folder next run?
                   } else {
-                      startFolder = Folder(this.etInputFolder.text);
+                      startFolder = Folder(this.etToProcess.text);
                   };
                 var usrFolder = startFolder.selectDlg ("Choose the folder to be processed:");
                 if (usrFolder) {
-                    this.etInputFolder.text = usrFolder.fsName;
+                    this.etToProcess.text = usrFolder.fsName;
                       this.updateFileOptions(); //1.10: Added so as to set the save to description correctly.
                     //1.10: Commented out because updateFileOptions calls Check Ok.:  this.handleMsg({type: "Check Ok"}) ;
                 };
@@ -1571,9 +1571,9 @@ function showUiPreset (mainWindow, preset, allowPresetDelete) {
                         alignChildren: 'left', \
                         rbAskOnSave:RadioButton{properties: {name: 'uiAskOnSaveOption'}, text:'Ask before saving.', helpTip: 'You will be prompted with a normal SaveAs style prompt.'},\
                         rbSaveToSourceFolder:RadioButton{properties: {name: 'uiSaveToSourceFolderOption'}, text:'Original folder.', helpTip: 'Files are saved to the same folder as the original or optionally a subfolder of that.'},\
-                        rbInFolder:RadioButton{properties: {name: 'uiSaveInFolderOption'}, text:'This folder:' , helpTip: 'Always use your choosen folder.'}\
+                        rbInFolder:RadioButton{properties: {name: 'uiSpecificFolderOption'}, text:'This folder:' , helpTip: 'Always use your choosen folder.'}\
                     },\
-                    btnBrowseForFolder:Button{properties: {name: 'uiBrowseForFolder'}, alignment: ['right','bottom'], text:'Choose folder...' , helpTip: 'Browse for a folder.'}\
+                    btnBrowse:Button{properties: {name: 'uiBrowse'}, alignment: ['right','bottom'], text:'Choose folder...' , helpTip: 'Browse for a folder.'}\
                 }\
                  etSaveFolder:EditText{properties: {name: 'uiSaveFolder', readonly:true},  text:'' , helpTip: 'The images will be stored here. ~ indicates your home folder.'},\
                  g0: Group { \
@@ -1648,9 +1648,9 @@ function showUiPreset (mainWindow, preset, allowPresetDelete) {
         win.handleMsg({type: "Check Ok"}) };
     ui.uiSaveToSourceFolderOption.onClick = function ()  { // 1.10: Added this option.
         win.handleMsg({type: "Check Ok"}) };
-    ui.uiSaveInFolderOption.onClick = function () {
+    ui.uiSpecificFolderOption.onClick = function () {
         win.handleMsg({type: "Check Ok"}) };
-    ui.uiBrowseForFolder.onClick = function () {
+    ui.uiBrowse.onClick = function () {
         win.handleMsg({type: "Select folder"});
         win.handleMsg({type: "Check Ok"});
     };
@@ -1717,7 +1717,7 @@ function showUiPreset (mainWindow, preset, allowPresetDelete) {
             case "Check Ok":
 
                 ui.uiSaveRepeatWarning.visible = ((Number(ui.uiMaxFilesizeKb.text)) && (!currentImageOnly));
-                ui.uiSaveFolder.visible = (ui.uiSaveInFolderOption.value);
+                ui.uiSaveFolder.visible = (ui.uiSpecificFolderOption.value);
                 ui.uiSubfolderOptionTxt.visible = ui.uiSubfolderOption.visible = (! ui.uiAskOnSaveOption.value);
 
                 // Positively state the requirements that must be met for the preset
@@ -1769,14 +1769,14 @@ function showUiPreset (mainWindow, preset, allowPresetDelete) {
                     (
                         ui.uiAskOnSaveOption.value
                         || ui.uiSaveToSourceFolderOption.value
-                        || ui.uiSaveInFolderOption.value
+                        || ui.uiSpecificFolderOption.value
                     ),
                     "An option for where to save must be specified."
                 );
 
-                if (ui.uiSaveInFolderOption.value)
+                if (ui.uiSpecificFolderOption.value)
                     validate(
-                        (ui.uiSaveFolder.text != ""),
+                        (ui.uiSaveFolder.data),
                         "A folder to save to must be specified.");
                 
                 if (
@@ -1837,7 +1837,7 @@ function showUiPreset (mainWindow, preset, allowPresetDelete) {
 
             case "Check save behaviour option":
                 ui.uiAskOnSaveOption.enabled = (currentImageOnly);
-                // ui.uiSaveInFolderOption.value = true;
+                // ui.uiSpecificFolderOption.value = true;
                 ui.uiAskOnSaveOption.value = false;
                 ui.uiNamingBehaviour.visible = (!currentImageOnly)
                 if (currentImageOnly)
@@ -1851,32 +1851,33 @@ function showUiPreset (mainWindow, preset, allowPresetDelete) {
                 ui.uiCanvasOpt3Txt.visible = ui.uiCanvasOpt3.visible = (ui.uiCanvasOpt4.visible || gPlaceOnCanvasBehaviourIds[ui.uiPlaceOnCanvasBehaviour.selection.index] == 'scale-and-offset');
                 ui.uiCanvasOpt2Txt.visible = ui.uiCanvasOpt2.visible = (ui.uiCanvasOpt4.visible || ui.uiCanvasOpt3.visible);
                 ui.uiCanvasOpt1Txt.visible = ui.uiCanvasOpt1.visible = (ui.uiCanvasOpt2.visible);
-                  switch (gPlaceOnCanvasBehaviourIds[ui.uiPlaceOnCanvasBehaviour.selection.index]) {
-                        case 'borders-min':
-                            ui.uiCanvasOpt1Txt.text = "Top";
-                            ui.uiCanvasOpt2Txt.text = "Bottom";
-                            ui.uiCanvasOpt3Txt.text = "Left";
-                            ui.uiCanvasOpt4Txt.text = "Right";
-                            break;
-                        case 'scale-and-offset':
-                            ui.uiCanvasOpt1Txt.text = "Scale%";
-                            ui.uiCanvasOpt2Txt.text = "x-shift";
-                            ui.uiCanvasOpt3Txt.text = "y-shift";
-                            break;
-                        default:
-                            break;
-                  };
+                switch (gPlaceOnCanvasBehaviourIds[ui.uiPlaceOnCanvasBehaviour.selection.index]) {
+                    case 'borders-min':
+                        ui.uiCanvasOpt1Txt.text = "Top";
+                        ui.uiCanvasOpt2Txt.text = "Bottom";
+                        ui.uiCanvasOpt3Txt.text = "Left";
+                        ui.uiCanvasOpt4Txt.text = "Right";
+                        break;
+                    case 'scale-and-offset':
+                        ui.uiCanvasOpt1Txt.text = "Scale%";
+                        ui.uiCanvasOpt2Txt.text = "x-shift";
+                        ui.uiCanvasOpt3Txt.text = "y-shift";
+                        break;
+                    default:
+                        break;
+                };
                 
                 break;
 
             case "Select folder":
-                  var startFolder;
-                  startFolder = Folder(settings.userData.lastSaveFolder);
-                  startFolder.changePath("..");
+                var startFolder;
+                startFolder = Folder(settings.userData.lastSaveFolder);
+                startFolder.changePath("..");
                 var usrFolder = startFolder.selectDlg ("Choose a folder to store your images:");
                 if (usrFolder) {
-                    ui.uiSaveInFolderOption.value = true;
-                    ui.uiSaveFolder.text = usrFolder.fullName;
+                    ui.uiSpecificFolderOption.value = true;
+                    ui.uiSaveFolder.data = usrFolder
+                    ui.uiSaveFolder.text = ui.uiSaveFolder.data.fullName;
                 };
                 break;
 
@@ -1920,10 +1921,17 @@ function showUiPreset (mainWindow, preset, allowPresetDelete) {
         case "saveToSourceFolder":
             ui.uiSaveToSourceFolderOption.value = true; break;
         case "saveToSaveFolder":
-            ui.uiSaveInFolderOption.value = true; break;
+            ui.uiSpecificFolderOption.value = true; break;
     };
 
-    ui.uiSaveFolder.text = preset.saveFolder;
+    if (preset.saveFolder == "") {
+        ui.uiSaveFolder.data = null;
+        ui.uiSaveFolder.text = "";
+    } else {
+        ui.uiSaveFolder.data = new Folder(preset.saveFolder);
+        ui.uiSaveFolder.text = ui.uiSaveFolder.data.fullName;
+    };
+
     ui.uiSubfolderOption.selection = gSubfolderOptionIds.indexAt(preset.subFolderOption);
     ui.uiDelBtn.enabled = allowPresetDelete;
     win.handleMsg({type: "Check Ok"});
@@ -1942,9 +1950,6 @@ function showUiPreset (mainWindow, preset, allowPresetDelete) {
     
     if (1==ret) {
         
-        if ((ui.uiSaveFolder.text == "")  &&  (ui.uiSaveInFolderOption.value))
-            ui.uiAskOnSaveOption.value = true;
-            
         preset.name = ui.uiPresetName.text;
         preset.colourProfileName =ui.uiColourProfile.text;
         preset.maxWidthPx = ui.uiMaxWidthPx.text;
@@ -1971,10 +1976,12 @@ function showUiPreset (mainWindow, preset, allowPresetDelete) {
             preset.smallImageCheck = "";
         if (ui.uiAskOnSaveOption.value) {
             preset.saveBehaviour = "ask";
+            ui.uiSaveFolder.data = null;
             ui.uiSaveFolder.text = "";
             ui.uiSubfolderOption.selection = gSubfolderOptionTxtList.indexAt("none");
         } else
                 if (ui.uiSaveToSourceFolderOption.value) {
+                    ui.uiSaveFolder.data = null;
                     ui.uiSaveFolder.text = "";
                     preset.saveBehaviour = "saveToSourceFolder"; // 1.10: Add this option explicit in the settings.
                 } else
@@ -1996,7 +2003,7 @@ function showUiPreset (mainWindow, preset, allowPresetDelete) {
          preset.canvasOpt4 = ui.uiCanvasOpt4.text;
 
         preset.subFolderOption = gSubfolderOptionIds[ui.uiSubfolderOption.selection.index];
-        preset.saveFolder =ui.uiSaveFolder.text;
+        preset.saveFolder = ui.uiSaveFolder.data.fullName;
     };
 
     return ret
