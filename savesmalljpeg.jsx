@@ -1970,43 +1970,46 @@ function showUiPreset (mainWindow, preset, allowPresetDelete) {
         preset.backgroundOptions = gBackgroundOptionsIds[ui.uiBackgroundOptions.selection.index];
         preset.postResizeSharpening = gPostResizeSharpeningIds[ui.uiPostResizeSharpening.selection.index];
         preset.postResizeSharpeningOpt = ui.uiPostResizeSharpeningOpt.text;
+
         if (ui.uiSmallImageWarning.value)
             preset.smallImageCheck = "warn"
         else
             preset.smallImageCheck = "";
+
         if (ui.uiAskOnSaveOption.value) {
             preset.saveBehaviour = "ask";
             ui.uiSaveFolder.data = null;
             ui.uiSaveFolder.text = "";
             preset.saveFolder = "";
-            ui.uiSubfolderOption.selection = gSubfolderOptionTxtList.indexAt("none");
-        } else
-                if (ui.uiSaveToSourceFolderOption.value) {
-                    ui.uiSaveFolder.data = null;
-                    ui.uiSaveFolder.text = "";
-                    preset.saveFolder = "";
-                    preset.saveBehaviour = "saveToSourceFolder"; // 1.10: Add this option explicit in the settings.
-                } else {
-                    preset.saveBehaviour = "saveToSaveFolder"; // 1.10: Made this option explicit in the settings.
-                    preset.saveFolder = ui.uiSaveFolder.data.fullName;
-                }
+            ui.uiSubfolderOption.selection = gSubfolderOptionTxtList.indexAt('None');
+            preset.subFolderOption = 'none'; // Id of none.
+        } else {
+            if (ui.uiSaveToSourceFolderOption.value) {
+                ui.uiSaveFolder.data = null;
+                ui.uiSaveFolder.text = "";
+                preset.saveFolder = "";
+                preset.saveBehaviour = "saveToSourceFolder"; // 1.10: Add this option explicit in the settings.
+            } else {
+                preset.saveBehaviour = "saveToSaveFolder"; // 1.10: Made this option explicit in the settings.
+                preset.saveFolder = ui.uiSaveFolder.data.fullName;
+            };
+            preset.subFolderOption = gSubfolderOptionIds[ui.uiSubfolderOption.selection.index];
+        };
 
-         if (   (ui.uiPlaceOnCanvasBehaviour.selection == gPlaceOnCanvasBehaviourIds.indexAt('none'))
-                || (ui.uiPlaceOnCanvasBehaviour.selection == gPlaceOnCanvasBehaviourIds.indexAt('extend-maximum'))
-            ) {
+        if (   (ui.uiPlaceOnCanvasBehaviour.selection == gPlaceOnCanvasBehaviourIds.indexAt('none'))
+            || (ui.uiPlaceOnCanvasBehaviour.selection == gPlaceOnCanvasBehaviourIds.indexAt('extend-maximum'))
+        ) {
             ui.uiCanvasOpt1.text = "";
             ui.uiCanvasOpt2.text = "";
             ui.uiCanvasOpt3.text = "";
-         };
-         if (ui.uiPlaceOnCanvasBehaviour.selection != gPlaceOnCanvasBehaviourIds.indexAt('borders-min')) {
+        };
+        if (ui.uiPlaceOnCanvasBehaviour.selection != gPlaceOnCanvasBehaviourIds.indexAt('borders-min')) {
             ui.uiCanvasOpt4.text = "";
-         };
-         preset.canvasOpt1 = ui.uiCanvasOpt1.text;
-         preset.canvasOpt2 = ui.uiCanvasOpt2.text;
-         preset.canvasOpt3 = ui.uiCanvasOpt3.text;
-         preset.canvasOpt4 = ui.uiCanvasOpt4.text;
-
-        preset.subFolderOption = gSubfolderOptionIds[ui.uiSubfolderOption.selection.index];
+        };
+        preset.canvasOpt1 = ui.uiCanvasOpt1.text;
+        preset.canvasOpt2 = ui.uiCanvasOpt2.text;
+        preset.canvasOpt3 = ui.uiCanvasOpt3.text;
+        preset.canvasOpt4 = ui.uiCanvasOpt4.text;
     };
 
     return ret
@@ -2081,11 +2084,15 @@ function getVersion() {
     return parseInt(app.version);
 }
 
-function hasJpgExtension (f) {
+function hasJpgSuffix (s) {
     var jpgExtension = ".jpg";
-    var lCaseName = f.name;
+    var lCaseName = s;
     lCaseName = lCaseName.toLowerCase();
-    return ( lCaseName.lastIndexOf( jpgExtension ) == f.name.length - jpgExtension.length )
+    return ( lCaseName.lastIndexOf( jpgExtension ) == s.length - jpgExtension.length )
+};
+
+function hasJpgExtension (f) {
+    return hasJpgSuffix(f.name)
 };
 
 function getFileExtensionOrType (f) {
@@ -2448,9 +2455,12 @@ try {
         if (runOptions.saveFolder) {
             if (! runOptions.inputName) throw "Unexpected error: Name has no value."
             if (! runOptions.saveFolder.exists) runOptions.saveFolder.create();
-            imageFile = new File(runOptions.saveFolder + "/" + runOptions.inputName);
-            if (!hasJpgExtension(imageFile))
-                imageFile = new File (imageFile + ".jpg");
+
+            imageFile = new File(runOptions.saveFolder);
+            if (hasJpgSuffix(runOptions.inputName))
+                imageFile.changePath(runOptions.inputName)
+            else
+                imageFile.changePath(runOptions.inputName + ".jpg");
         }
         else {
             imageFile = promptForJpgSaveFile("Choose a folder and enter the image title as the file name.");
