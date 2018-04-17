@@ -1718,7 +1718,8 @@ function showUiPreset (mainWindow, preset, allowPresetDelete) {
 
                 ui.uiSaveRepeatWarning.visible = ((Number(ui.uiMaxFilesizeKb.text)) && (!currentImageOnly));
                 ui.uiSaveFolder.visible = (ui.uiSpecificFolderOption.value);
-                ui.uiSubfolderOptionTxt.visible = ui.uiSubfolderOption.visible = (! ui.uiAskOnSaveOption.value);
+                ui.uiSubfolderOption.visible = (! ui.uiAskOnSaveOption.value);
+                ui.uiSubfolderOptionTxt.visible = ui.uiSubfolderOption.visible;
 
                 // Positively state the requirements that must be met for the preset
                 // and report those requirements not met.
@@ -1836,21 +1837,35 @@ function showUiPreset (mainWindow, preset, allowPresetDelete) {
                 break;
 
             case "Check save behaviour option":
+
                 ui.uiAskOnSaveOption.enabled = (currentImageOnly);
                 // ui.uiSpecificFolderOption.value = true;
                 ui.uiAskOnSaveOption.value = false;
                 ui.uiNamingBehaviour.visible = (!currentImageOnly)
                 if (currentImageOnly)
                     ui.uiNamingBehaviour.selection = gNamingBehaviourIds.indexAt("original"); // Reset to original naming.
+
                 break;
 
             case "Check presentation options":
-                ui.uiPostResizeSharpeningOptTxt.visible = ui.uiPostResizeSharpeningOpt.visible = (gPostResizeSharpeningIds[ui.uiPostResizeSharpening.selection.index] == "sharpenForDigitalBFraser")
+
+                ui.uiPostResizeSharpeningOpt.visible = (gPostResizeSharpeningIds[ui.uiPostResizeSharpening.selection.index] == "sharpenForDigitalBFraser")
+                ui.uiPostResizeSharpeningOptTxt.visible = ui.uiPostResizeSharpeningOpt.visible
+
                 ui.uiBackgroundOptions.visible = (gPlaceOnCanvasBehaviourIds[ui.uiPlaceOnCanvasBehaviour.selection.index] != 'none');
-                ui.uiCanvasOpt4Txt.visible = ui.uiCanvasOpt4.visible = (gPlaceOnCanvasBehaviourIds[ui.uiPlaceOnCanvasBehaviour.selection.index] == 'borders-min');
-                ui.uiCanvasOpt3Txt.visible = ui.uiCanvasOpt3.visible = (ui.uiCanvasOpt4.visible || gPlaceOnCanvasBehaviourIds[ui.uiPlaceOnCanvasBehaviour.selection.index] == 'scale-and-offset');
-                ui.uiCanvasOpt2Txt.visible = ui.uiCanvasOpt2.visible = (ui.uiCanvasOpt4.visible || ui.uiCanvasOpt3.visible);
-                ui.uiCanvasOpt1Txt.visible = ui.uiCanvasOpt1.visible = (ui.uiCanvasOpt2.visible);
+
+                ui.uiCanvasOpt4.visible = (gPlaceOnCanvasBehaviourIds[ui.uiPlaceOnCanvasBehaviour.selection.index] == 'borders-min');
+                ui.uiCanvasOpt4Txt.visible = ui.uiCanvasOpt4.visible
+
+                ui.uiCanvasOpt3.visible = (ui.uiCanvasOpt4.visible || gPlaceOnCanvasBehaviourIds[ui.uiPlaceOnCanvasBehaviour.selection.index] == 'scale-and-offset');
+                ui.uiCanvasOpt3Txt.visible = ui.uiCanvasOpt3.visible
+
+                ui.uiCanvasOpt2.visible = (ui.uiCanvasOpt4.visible || ui.uiCanvasOpt3.visible);
+                ui.uiCanvasOpt2Txt.visible = ui.uiCanvasOpt2.visible
+
+                ui.uiCanvasOpt1.visible = (ui.uiCanvasOpt2.visible);
+                ui.uiCanvasOpt1Txt.visible = ui.uiCanvasOpt1.visible
+
                 switch (gPlaceOnCanvasBehaviourIds[ui.uiPlaceOnCanvasBehaviour.selection.index]) {
                     case 'borders-min':
                         ui.uiCanvasOpt1Txt.text = "Top";
@@ -1870,6 +1885,7 @@ function showUiPreset (mainWindow, preset, allowPresetDelete) {
                 break;
 
             case "Select folder":
+
                 var startFolder;
                 startFolder = Folder(settings.userData.lastSaveFolder);
                 startFolder.changePath("..");
@@ -1879,6 +1895,7 @@ function showUiPreset (mainWindow, preset, allowPresetDelete) {
                     ui.uiSaveFolder.data = usrFolder
                     ui.uiSaveFolder.text = ui.uiSaveFolder.data.fullName;
                 };
+
                 break;
 
             case "Delete":
