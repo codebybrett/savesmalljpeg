@@ -156,7 +156,7 @@ bringToFront();
         // Used with getCustomOptions
         // var scriptUUID = "c1025640-4ccf-11dd-ae16-0800200c9a66"
 
-var scriptVersion = '1.20';
+var scriptVersion = '1.21';
 
 // Using a file to store data between sessions - hopefully will work with older versions.
 var configDataFile = new File (app.preferencesFolder + './SaveSmallJpegSettings.xml');
@@ -1004,7 +1004,7 @@ function showUiMain (runOptions, settings) {
     // Keeps window text and parameters in sync with preset choice.
     // --------------------------------------------------------------------------------
 
-    win.updateParameters = function  () {
+    win.updateDescriptionFromPreset = function  () {
 
         // Using the currently selected preset...
         var preset = this.settings.userData.preset[this.ddPreset.selection.index]
@@ -1017,6 +1017,12 @@ function showUiMain (runOptions, settings) {
         else
             tmpTxt = tmpTxt + " (maximum quality)";
         this.stDescription.text = tmpTxt;
+    };
+
+    win.updateImageParametersFromPreset = function  () {
+
+        // Using the currently selected preset...
+        var preset = this.settings.userData.preset[this.ddPreset.selection.index]
 
         // Set the image parameters according to the current Preset.
         this.runOptions.imageParameters = new Object();
@@ -1045,7 +1051,6 @@ function showUiMain (runOptions, settings) {
         else
             this.runOptions.imageParameters.maxFilesizekb = Number(preset.maxFilesizeKb);
         this.runOptions.imageParameters.smallImageWarning = (preset.smallImageCheck == "warn");
-
     };
 
     // --------------------------------------------------------------------------------
@@ -1090,7 +1095,7 @@ function showUiMain (runOptions, settings) {
         var preset = this.settings.userData.preset[this.ddPreset.selection.index]
         var currentImageOnly = (preset.inputOption == "currentImage");
         var savingToSourceFolder = (preset.saveBehaviour == "saveToSourceFolder")
-        var locationTxt;
+        var destinationTxt;
 
         // Updating this here, because we use the folder that was displayed to the user.
         this.runOptions.saveFolder = null;
@@ -1107,7 +1112,7 @@ function showUiMain (runOptions, settings) {
             this.allowOk = function () {
                 return (psTool.isDocumentActive())
             };
-            locationTxt = "You will be prompted to choose a folder and enter an image name.";
+            destinationTxt = "You will be prompted to choose a folder and enter an image name.";
             
         } else {
             
@@ -1166,65 +1171,66 @@ function showUiMain (runOptions, settings) {
                 // Saving to a folder - curent image or batch?
                 // Saving to the same folder as original or to a specified folder?
                 
-                // Set ultimateSaveFolder only if we have some specification.
-                var ultimateSaveFolder = null;
+                // Set outputFolder only if we have some specification.
+                var outputFolder = null;
                 if (savingToSourceFolder) {
                     if (currentImageOnly) {
-                            // In current image mode we have the folder if the document is open and previously saved.
-                            var documentIsOpen = false;
-                            try {
-                                app.activeDocument; // Testing to see if the current image is open.
-                                ultimateSaveFolder = new Folder (app.activeDocument.path);
-                                ultimateSaveFolder.changePath(subfolderTxt);
-                                documentIsOpen = true;
-                            } catch (e) {}
+                        // In current image mode we have the folder if the document is open and previously saved.
+                        var documentIsOpen = false;
+                        try {
+                            app.activeDocument; // Testing to see if the current image is open.
+                            outputFolder = new Folder (app.activeDocument.path);
+                            outputFolder.changePath(subfolderTxt);
+                            documentIsOpen = true;
+                        } catch (e) {}
                     } else {
-                            // In batch mode - we will have the folder only if the process folder has been specified.
-                            if (this.etToProcess.text != '') {
-                                ultimateSaveFolder = new Folder (this.etToProcess.text);
-                                ultimateSaveFolder.changePath(subfolderTxt);
-                            }
+                        // In batch mode - we will have the folder only if the process folder has been specified.
+                        if (this.etToProcess.text != '') {
+                            outputFolder = new Folder (this.etToProcess.text);
+                            outputFolder.changePath(subfolderTxt);
+                        }
                     }
                 } else {
                     // We should have a folder specified already in our preset.
-                    ultimateSaveFolder = new Folder (preset.saveFolder);
-                    ultimateSaveFolder.changePath(subfolderTxt);
+                    outputFolder = new Folder (preset.saveFolder);
+                    outputFolder.changePath(subfolderTxt);
                 };
 
                 // Set the text that describes the folder location
 
-                if (savingToSourceFolder  && !ultimateSaveFolder)
+                var destinationfolderTxt;
+                if (savingToSourceFolder  && !outputFolder)
                     if (subfolderTxt == "")
-                        locationTxt = " the same folder as the original image."
+                        destinationfolderTxt = " the same folder as the original image."
                     else
-                        locationTxt = " subfolder: " + subfolderTxt
+                        destinationfolderTxt = " subfolder: " + subfolderTxt
                 else
-                    locationTxt = ": " + ultimateSaveFolder.fsName;
+                    destinationfolderTxt = ": " + outputFolder.fsName;
 
                 if (currentImageOnly)
-                    locationTxt = 'Saving in' + locationTxt
+                    destinationTxt = 'Saving in' + destinationfolderTxt
                 else
                     if (preset.namingBehaviour == "original")
-                        locationTxt =  'Saving in' + locationTxt
+                        destinationTxt =  'Saving in' + destinationfolderTxt
                     else
-                        locationTxt = 'Rename, save in' + locationTxt;
+                        destinationTxt = 'Rename, save in' + destinationfolderTxt;
                
-               this.runOptions.saveFolder = ultimateSaveFolder;
+               this.runOptions.saveFolder = outputFolder;
             
          };
         this.stName.visible = this.etName.visible;
         this.stProcess.visible = this.etToProcess.visible;
         this.cbOpenAfterSave.visible = !this.etToProcess.visible;
         this.btnBrowse.visible = this.etToProcess.visible;
-        this.stFolderDisplay.text = locationTxt;
+        this.stFolderDisplay.text = destinationTxt;
         this.handleMsg({type: "Check Ok"})
     };
 
     // --------------------------------------------------------------------------------
-    //  Refresh everything on the main dialog.
+    //  Synchronise everything on the main dialog.
     // --------------------------------------------------------------------------------
     
-    win.refreshUiMain = function () {
+    win.syncUiMain = function () {
         // Loads the controls in the window with values and event handlers.
         //
 
@@ -1238,9 +1244,9 @@ function showUiMain (runOptions, settings) {
         var newIndex = Number(this.settings.userData.currentPreset);
         this.ddPreset.selection = newIndex; // Had some odd behaviour during development hence the newIndex variable to allow "time" for ddl to update.
 
-        this.updateParameters();
+        this.updateDescriptionFromPreset();
+        this.updateImageParametersFromPreset();
         this.updateFileOptions();
-
 
         this.cbOpenAfterSave.value = (this.settings.userData.afterSaveBehaviour == "open")
 
@@ -1255,7 +1261,7 @@ function showUiMain (runOptions, settings) {
     // Store user settings made on the main dialog.
     // --------------------------------------------------------------------------------
     
-    win.saveSettings = function () {
+    win.updateSettings = function () {
         // Save settings of this dialog.
         var currentIndex = Number(this.ddPreset.selection.index);
         this.settings.userData.currentPreset = currentIndex;
@@ -1289,7 +1295,7 @@ function showUiMain (runOptions, settings) {
         this.parent.handleMsg({type: "Done"});
     };
     win.btnBrowse.onClick = function () {
-        this.parent.handleMsg({type: "Select folder"});
+        this.parent.handleMsg({type: "ProcessFolderChoice"});
     };
 
     // --------------------------------------------------------------------------------
@@ -1317,7 +1323,8 @@ function showUiMain (runOptions, settings) {
             case "Preset changed":
     
                 this.settings.userData.currentPreset = msg.value;
-                this.updateParameters();
+                this.updateDescriptionFromPreset();
+                this.updateImageParametersFromPreset();
                 this.updateFileOptions();
                 break;
 
@@ -1326,13 +1333,13 @@ function showUiMain (runOptions, settings) {
                 var currentIndex = this.ddPreset.selection.index;
                 var preset = this.settings.userData.preset[currentIndex];
 
-                // Clone the preset
+                // Clone the preset.
                 var presetToEdit = new Object();
                 for(var i in preset)
                     presetToEdit[i] = preset[i];
 
-                var allowPresetDelete = (1 < this.settings.userData.preset.length);
-                var uiPresetResult = showUiPreset(this, presetToEdit, allowPresetDelete);
+                var isDeletePresetAllowed = (1 < this.settings.userData.preset.length);
+                var uiPresetResult = showUiPreset(this, presetToEdit, isDeletePresetAllowed);
                 switch (uiPresetResult) {
                     case -1: // Delete Preset
                         this.settings.deletePreset(this.ddPreset.selection.index);
@@ -1347,10 +1354,10 @@ function showUiMain (runOptions, settings) {
                         };
                         break;
                 };
-                this.refreshUiMain();
+                this.syncUiMain();
                 break;
 
-            case "Select folder":
+            case "ProcessFolderChoice":
                   var startFolder;
                   if (this.etToProcess.text == "") {
                       startFolder = Folder(settings.userData.lastProcessed);
@@ -1361,7 +1368,7 @@ function showUiMain (runOptions, settings) {
                 var usrFolder = startFolder.selectDlg ("Choose the folder to be processed:");
                 if (usrFolder) {
                     this.etToProcess.text = usrFolder.fsName;
-                      this.updateFileOptions(); //1.10: Added so as to set the save to description correctly.
+                    this.updateFileOptions(); //1.10: Added so as to set the save to description correctly.
                     //1.10: Commented out because updateFileOptions calls Check Ok.:  this.handleMsg({type: "Check Ok"}) ;
                 };
                 break;
@@ -1373,14 +1380,14 @@ function showUiMain (runOptions, settings) {
     win.runOptions = runOptions;
     win.settings = settings;
 
-     // Refresh the dialog.
-    win.refreshUiMain ();
+     // Synchronise the dialog.
+    win.syncUiMain ();
 
      // Show the dialog - returns when user has finished with it.
     var dialogResult = win.show();
 
-    // Modify our settings every time OK is clicked.
-    win.saveSettings();
+    // Modify our settings every time - there is no cancel.
+    win.updateSettings();
 
     return dialogResult;
 };
@@ -1414,7 +1421,7 @@ function promptForJpgSaveFile (prompt) {
 // Handles everthing related to the preset dialog.
 // ================================================================================
 
-function showUiPreset (mainWindow, preset, allowPresetDelete) {
+function showUiPreset (mainWindow, preset, isDeletePresetAllowed) {
     
     // --------------------------------------------------------------------------------
     // Preset dialog resource string
@@ -1472,7 +1479,7 @@ function showUiPreset (mainWindow, preset, allowPresetDelete) {
                     cbSmallImageWarning:Checkbox{\
                         properties: {name: 'uiSmallImageWarning'}, \
                         alignment: ['right','center'],\
-                        text:'Warn if image is too small',\
+                        text:'Warn if original image is too small',\
                         helpTip: 'Warns you if your image is smaller than both the maximum height and maximum width.'\
                     }\
                 },\
@@ -1651,7 +1658,7 @@ function showUiPreset (mainWindow, preset, allowPresetDelete) {
     ui.uiSpecificFolderOption.onClick = function () {
         win.handleMsg({type: "Check Ok"}) };
     ui.uiBrowse.onClick = function () {
-        win.handleMsg({type: "Select folder"});
+        win.handleMsg({type: "DestinationFolderChoice"});
         win.handleMsg({type: "Check Ok"});
     };
     ui.uiPresetName.onChanging = function () {
@@ -1884,7 +1891,7 @@ function showUiPreset (mainWindow, preset, allowPresetDelete) {
                 
                 break;
 
-            case "Select folder":
+            case "DestinationFolderChoice":
 
                 var startFolder;
                 startFolder = Folder(settings.userData.lastSaveFolder);
@@ -1950,7 +1957,7 @@ function showUiPreset (mainWindow, preset, allowPresetDelete) {
     };
 
     ui.uiSubfolderOption.selection = gSubfolderOptionIds.indexAt(preset.subFolderOption);
-    ui.uiDelBtn.enabled = allowPresetDelete;
+    ui.uiDelBtn.enabled = isDeletePresetAllowed;
     win.handleMsg({type: "Check Ok"});
 
 
