@@ -29,7 +29,7 @@ The default preset is set to make life easy for my camera club.
 
 ## How to download
 
-Save the script to your computer from this link: [savesmalljpeg.jsx](https://raw.githubusercontent.com/codebybrett/savesmalljpeg/master/savesmalljpeg.jsx)
+Save the script to your computer from this link: [savesmalljpeg.jsx](https://raw.githubusercontent.com/codebybrett/savesmalljpeg/master/savesmalljpeg.jsx).  Depending on your browser you may need to right-click on the link and use the "Save Target As..." or "Save Link As..." option.
 
 ## How to use
 
