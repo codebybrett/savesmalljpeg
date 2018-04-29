@@ -27,6 +27,10 @@ Main processing workflow:  duplicate, flatten, resize, sharpening, scaling on ca
 
 The default preset is set to make life easy for my camera club.
 
+## How to download
+
+Save the script to your computer from this link: [savesmalljpeg.jsx](https://raw.githubusercontent.com/codebybrett/savesmalljpeg/master/savesmalljpeg.jsx)
+
 ## How to use
 
 In Photoshop use File/Scripts/Browse and load the script.
