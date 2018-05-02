@@ -156,7 +156,7 @@ bringToFront();
         // Used with getCustomOptions
         // var scriptUUID = "c1025640-4ccf-11dd-ae16-0800200c9a66"
 
-var scriptVersion = '1.21';
+var scriptVersion = '1.30';
 
 // Using a file to store data between sessions - hopefully will work with older versions.
 var configDataFile = new File (app.preferencesFolder + './SaveSmallJpegSettings.xml');
@@ -630,7 +630,7 @@ function Settings () {
                 <name>Northside Creative Photography - EDI Competition</name>\
                 <colourProfileName>sRGB IEC61966-2.1</colourProfileName>\
                 <maxWidthPx>1920</maxWidthPx>\
-                <maxHeightPx>1080</maxHeightPx>\
+                <maxHeightPx>1200</maxHeightPx>\
                 <maxFilesizeKb>2000</maxFilesizeKb>\
                 <smallImageCheck>warn</smallImageCheck>\
                 <presetNotes></presetNotes>\
