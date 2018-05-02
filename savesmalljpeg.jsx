@@ -159,7 +159,8 @@ bringToFront();
 var scriptVersion = '1.30';
 
 // Using a file to store data between sessions - hopefully will work with older versions.
-var configDataFile = new File (app.preferencesFolder + './SaveSmallJpegSettings.xml');
+var configDataFile = new File (app.preferencesFolder)
+configDataFile.changePath('SaveSmallJpegSettings.xml');
 
 // ---------------------------------------------------------------------
 
@@ -1057,7 +1058,7 @@ function showUiMain (runOptions, settings) {
     // Calculates the save folder and sets window text specific to the file options selected.
     // --------------------------------------------------------------------------------
     
-    win.updateFileOptions = function () {
+    win.updateRunOptionSaveFolder = function () {
 
         var today = new Date();
         var dayInMilliseconds = (24*60*60*1000);
@@ -1099,6 +1100,7 @@ function showUiMain (runOptions, settings) {
 
         // Updating this here, because we use the folder that was displayed to the user.
         this.runOptions.saveFolder = null;
+
         this.etToProcess.visible = false;
         this.etName.visible = false;
 
@@ -1222,7 +1224,9 @@ function showUiMain (runOptions, settings) {
         this.stProcess.visible = this.etToProcess.visible;
         this.cbOpenAfterSave.visible = !this.etToProcess.visible;
         this.btnBrowse.visible = this.etToProcess.visible;
+
         this.stFolderDisplay.text = destinationTxt;
+
         this.handleMsg({type: "Check Ok"})
     };
 
@@ -1241,12 +1245,15 @@ function showUiMain (runOptions, settings) {
         this.ddPreset.removeAll()
         for (var i=0; i < this.settings.userData.preset.length; i++) 
             win.ddPreset.add('item', this.settings.userData.preset[i].name);
-        var newIndex = Number(this.settings.userData.currentPreset);
-        this.ddPreset.selection = newIndex; // Had some odd behaviour during development hence the newIndex variable to allow "time" for ddl to update.
+
+        // Had some odd behaviour during development hence the presetIndex variable to allow
+        // "time" for ddl to update.
+        var presetIndex = Number(this.settings.userData.currentPreset);
+        this.ddPreset.selection = presetIndex;
 
         this.updateDescriptionFromPreset();
         this.updateImageParametersFromPreset();
-        this.updateFileOptions();
+        this.updateRunOptionSaveFolder();
 
         this.cbOpenAfterSave.value = (this.settings.userData.afterSaveBehaviour == "open")
 
@@ -1263,15 +1270,15 @@ function showUiMain (runOptions, settings) {
     
     win.updateSettings = function () {
         // Save settings of this dialog.
-        var currentIndex = Number(this.ddPreset.selection.index);
-        this.settings.userData.currentPreset = currentIndex;
-        var preset = this.settings.userData.preset[currentIndex];
+        var presetIndex = Number(this.ddPreset.selection.index);
+        this.settings.userData.currentPreset = presetIndex;
+        var preset = this.settings.userData.preset[presetIndex];
         if (this.cbOpenAfterSave.value)
             this.settings.userData.afterSaveBehaviour = "open"
         else
             this.settings.userData.afterSaveBehaviour = "";
         this.runOptions.inputOption = preset.inputOption;
-        if (this.settings.userData.preset[currentIndex].inputOption == "currentImage")
+        if (this.settings.userData.preset[presetIndex].inputOption == "currentImage")
             this.runOptions.inputName = this.etName.text
         else
             this.runOptions.inputName = this.etToProcess.text;
@@ -1325,32 +1332,34 @@ function showUiMain (runOptions, settings) {
                 this.settings.userData.currentPreset = msg.value;
                 this.updateDescriptionFromPreset();
                 this.updateImageParametersFromPreset();
-                this.updateFileOptions();
+                this.updateRunOptionSaveFolder();
                 break;
 
             case "Define preset":
 
-                var currentIndex = this.ddPreset.selection.index;
-                var preset = this.settings.userData.preset[currentIndex];
+                var presetIndex = this.ddPreset.selection.index;
+                var preset = this.settings.userData.preset[presetIndex];
 
-                // Clone the preset.
-                var presetToEdit = new Object();
-                for(var i in preset)
-                    presetToEdit[i] = preset[i];
+                // Copy the preset for editing.
+                var editedPreset = new Object();
+                for(var fld in preset)
+                    editedPreset[fld] = preset[fld];
 
                 var isDeletePresetAllowed = (1 < this.settings.userData.preset.length);
-                var uiPresetResult = showUiPreset(this, presetToEdit, isDeletePresetAllowed);
+
+                var uiPresetResult = showUiPreset(editedPreset, isDeletePresetAllowed);
+
                 switch (uiPresetResult) {
                     case -1: // Delete Preset
-                        this.settings.deletePreset(this.ddPreset.selection.index);
+                        this.settings.deletePreset(presetIndex);
                         break;
                     case 1: // Preset modified
-                        if (preset.name == presetToEdit.name)
+                        if (preset.name == editedPreset.name)
                             // Same name, update existing preset.
-                            this.settings.userData.preset[currentIndex] = presetToEdit;
+                            this.settings.userData.preset[presetIndex] = editedPreset;
                         else {
                             // Different name, create new preset - alphabetical order.
-                            this.settings.insertPreset(presetToEdit);
+                            this.settings.insertPreset(editedPreset);
                         };
                         break;
                 };
@@ -1368,8 +1377,8 @@ function showUiMain (runOptions, settings) {
                 var usrFolder = startFolder.selectDlg ("Choose the folder to be processed:");
                 if (usrFolder) {
                     this.etToProcess.text = usrFolder.fsName;
-                    this.updateFileOptions(); //1.10: Added so as to set the save to description correctly.
-                    //1.10: Commented out because updateFileOptions calls Check Ok.:  this.handleMsg({type: "Check Ok"}) ;
+                    this.updateRunOptionSaveFolder(); //1.10: Added so as to set the save to description correctly.
+                    //1.10: Commented out because updateRunOptionSaveFolder calls Check Ok.:  this.handleMsg({type: "Check Ok"}) ;
                 };
                 break;
             
@@ -1377,8 +1386,8 @@ function showUiMain (runOptions, settings) {
     };
 
     // Window reference to settings.
-    win.runOptions = runOptions;
-    win.settings = settings;
+    win.runOptions = runOptions; // Processing settings.
+    win.settings = settings; // Script configuration settings saved to file.
 
      // Synchronise the dialog.
     win.syncUiMain ();
@@ -1421,7 +1430,7 @@ function promptForJpgSaveFile (prompt) {
 // Handles everthing related to the preset dialog.
 // ================================================================================
 
-function showUiPreset (mainWindow, preset, isDeletePresetAllowed) {
+function showUiPreset (preset, isDeletePresetAllowed) {
     
     // --------------------------------------------------------------------------------
     // Preset dialog resource string
