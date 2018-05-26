@@ -1,0 +1,66 @@
+This is the historical manually maintained old history.
+No longer maintained since moving to GitHub.
+
+// History:
+//              6-Jul-2008 - Brett Handley - Initial version. Developed using Photoshop CS3. My first Javascript.
+//  1.0    19-Jul-2008 - Brett Handley - release version - still not tested for Mac though.
+//  1.01 24-Jul-2008 - Brett Handley. Bug fix - ruler units.
+//  1.02 26-Jul-2008 - Brett Handley. Redo layout of Preset window using Auto layout. Tweek main dialog.
+//  1.03 26-Jul-2008 - Brett Handley. Make menu item show as Save Small JPEG ..., Change name of save
+//          button depending on mode, move ok button to right on Edit Preset if Macintosh.
+//  1.04 29-Jul-2008 - Brett Handley. CS2 does not have File.changePath() method. Remove use of it.
+//  1.05 6-Aug-2008 - Brett Handley. Fixed bug - next first wednesday in month was returning undefined on the actual day.
+//  1.06                         Brett Handley. Remove dependence on XML class object (introduced in CS3) so
+//           that it will work with CS2. Workarounds, fixes for other CS2 issues. Now works on CS2 and CS3.
+//          Can't resolve in CS2 (probably CS2 bugs): preset dialog - alignment of buttons, ask radio button won't load correctly.
+//  1.07 10-apr-2011 - Brett Handley. Fixed bug - didn't always get output size within maximum. Added explanation for why outputfile may not be deleted.
+//  1.08 23-may-2011 - Brett Handley. Fixed bug - Was using activedocument.fullName property for unsaved files (compliesWithRequirements test) which raised error.
+//                                    Open after save checkbox was invisible - CS5 must have changed window behaviour again... Put test for zero when overriding size with preferredsize.
+//  1.09 23-may-2011 - Brett Handley. exportDocument (saveforweb) changes spaces to hypens on save - so the script was losing track of the newly created file and couldn't get a filesize. Change to hypens myself earlier.
+//  1.10 11-jun-2012 - Brett Handley.
+//                            Add subfolder option constants of 'thumbs', 'jpg', 'edi', 'smalljpeg' to give user some more flexibility with saving.
+//                            Updated default NCP EDI and Gallery settings for latest values.
+//                            Add scriptVersion to settings file.
+//                            Ensure that original cannot be overwritten.
+//                            Make folder option of saveBehaviour explict value of 'saveToSaveFolder' rather being empty string value. Empty string defaults to this option - so as to upgrade old installations.
+//                            Fixed bug - was not properly filtering not photoshop files, Add indexOf method to Array prototype.
+//                  Add saveBehaviour option saveToSourceFolder.
+//                            Add reduction method option for resizing.
+//                            Add inputOption ids - in case new processing modes are added later.
+//                            Change index references in settings to symbols or instructions.
+//                            Add document renaming option.
+//                            Moved some photoshop stuff out of various places into PhotoshopTool object to neaten things up.
+//                            Added beforeSaveBehaviour option - 3 levels of sharpening using Bruce Fraser's method.
+//                            Fixed bug - Date.getMonth returning 0..11 was expection 1..12.
+//  1.11 18-Aug-2013 - Brett Handley
+//                            Add Extend image to max width and max height with black/white/gray/foreground colour.
+//                            Add option to extend background.
+//                            Add option to scale-and-offset
+//                            Add option to rotate image for best fit.
+//                            Add notes field.
+//                            Dialog to select process folder now defaults at the current process folder or last processed folder.
+//                            Dialog to select specific output folder now defaults to parent of last save folder.
+//                            Tidy UI.
+//  1.12 20-Aug-2013 - Brett Handley
+//                            Add call to image and background actions.
+//  1.13 21-Aug-2013 - Brett Handley
+//                            Bug fix borders option.
+//  1.14 14-Sep-2014 - Brett Handley
+//                            Bug fix place on background option - when invalid option "none" can't save present. Fix by translating "none" to "place-black".
+//                            Change default background option to "place-black".
+//  1.15 15-Sep-2014 - Brett Handley
+//                            Fix non-upgraded subfolderoption that prevents script from loading properly.
+//                            Fix non-upgraded inputOption that prevents editing of preset.
+//                            Modify Preset ui with tabbed panel to get more into smaller area.
+//                            Renamed beforeSaveBehaviour to be postResizeSharpening.
+//                            Added placementAction.
+//                            Changed wording of border options.
+//                            Added extract sharpening options.
+//  1.16 23-Feb-2015 - Brett Handley
+//                            Fix bug - was not accepting zero shift amounts.
+//  1.17 07-Apr-2018 - Brett Handley
+//                            Change default presets.
+//  1.18 13-Apr-2018 - Brett Handley
+//                            Fix bug where preset panel is off screen.
+//                            Rename Edit  preset to Define.
+//                            Move to GitHub.
