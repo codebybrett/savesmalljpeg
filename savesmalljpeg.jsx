@@ -828,7 +828,7 @@ function PresetOptions (psTool) {
         },
         {
             name: 'allImagesInFolder',
-            text: 'Process all images in a folder, save using the original name'
+            text: 'Process all images in a folder'
         }
     ];
 
