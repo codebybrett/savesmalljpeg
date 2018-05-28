@@ -1,6 +1,6 @@
 # Save Small JPEG
 
-**Save Small JPEG** is simple and quick to use Adobe Photoshop script for preset based exporting of small images indvidually or as batch of images from a folder.
+**Save Small JPEG** is simple and quick to use Adobe Photoshop script for preset based exporting of small images indvidually or as batch of images from a folder. It should work on Mac or Windows.
 
 For example to export a single image with the provided preset:
 
@@ -22,6 +22,7 @@ The preset settings window:
 
 ## Features
 
+* All work carried out on a duplicate of your image.
 * Export settings are stored as a named preset.
 * Define multiple presets.
 * Constrain images to fit within width and height.
@@ -80,3 +81,7 @@ At the time of writing for example my script settings file is stored in this loc
 The script settings file is called:
 
     SaveSmallJpegSettings.xml
+
+### License
+
+It's an MIT license, which can be found in the GitHub repository.  Essentially, you are free to use this script on the understanding that you do so at your own risk.
