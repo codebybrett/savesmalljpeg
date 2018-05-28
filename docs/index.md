@@ -47,19 +47,19 @@ The simplest way: in Photoshop use File/Scripts/Browse and load the script. Done
 
 Or for ongoing convenience: copy the script to your Photoshop .../Presets/Scripts folder, then you can access it by File/Scripts/Save Small JPEG...
 
-## Making presets
+## Making and removing presets
 
 The first time the script is run it creates a default preset. Any changes you make are saved in a file in your photoshop settings folder when you exit the script.
 
 To create a new preset, first choose an existing preset that's close to what you want, click "Define" and then enter a new name for it. Make any settings changes for the new preset and click "Ok".
 
-The default preset is designed to make life easy for members of the camera club I attend, but can be removed. To remove a preset you click the "Remove preset permanently" button. This button is enabled once there are more than one presets defined.
+The default preset is designed to make life easy for members of the camera club I attend, but can be removed. To remove a preset you click the "Remove preset permanently" button. This button is enabled once there are two or more presets defined.
 
 ### Defining a preset
 
 Click the "Define" button to open the settings for a preset.  Make changes as necessary and Click "Ok" to save the changes or click "Cancel" (or hit Esc key) to cancel changes.
 
-The settings here determine what images are procesed (one more many), how the images are processed, where the images are saved to and how they are named.
+The settings here determine what images are procesed (one opened image or many images in a folder), how the images are processed, where the images are saved to and how they are named.
 
 The tabs "Preparation", "Resizing", "Presentation" and "Finally" provide options for each of the processing steps of an image.
 
