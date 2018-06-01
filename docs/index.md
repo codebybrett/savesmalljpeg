@@ -36,7 +36,15 @@ The preset settings window:
 * Preset file is a simplified XML file that could be distributed.
 * Simple user interface.
 
-Interal processing workflow:  duplicate, flatten, resize, sharpening, scaling on canvas, convert to profile, convert to 8bit, save reducing quality until specified filesize achieved.
+Interal processing workflow:
+
+* Duplicate, flatten, optional preparation action.
+* Optional rotation, resize image to fit within optional presentation borders, optional sharpening.
+* Optional presentation action and flatten.
+* Extend canvas, background colour, position image according to presention options.
+* Optional final background action.
+* Convert to output profile, convert to 8bit.
+* Save iteratively until specified filesize achieved while maximising JPEG quality.
 
 ## Where to download
 
