@@ -40,7 +40,7 @@ Interal processing workflow:  duplicate, flatten, resize, sharpening, scaling on
 
 ## Where to download
 
-Save the script to a folder on your computer from this link: [savesmalljpeg.jsx](https://raw.githubusercontent.com/codebybrett/savesmalljpeg/master/savesmalljpeg.jsx).  Depending on your browser you may need to right-click on the link and use the "Save Target As..." or "Save Link As..." option.
+Save the script to a folder on your computer from this link: <a href="https://raw.githubusercontent.com/codebybrett/savesmalljpeg/master/savesmalljpeg.jsx" download>savesmalljpeg.jsx</a>.  Depending on your browser you may need to right-click on the link and use the "Save Target As..." or "Save Link As..." option.
 
 ## How to run the script
 

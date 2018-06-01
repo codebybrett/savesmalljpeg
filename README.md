@@ -14,7 +14,7 @@ See the [Documentation](https://codebybrett.github.io/savesmalljpeg/)
 
 ## Contribution and issues
 
-I'm not going to put a lot of time into this other than playing around with code restructuring ideas, but if you have bug fixes to include that would be great.
+I'm not going to put a lot of time into this other than playing around with code restructuring and user interface ideas, but if you have bug fixes to include that would be great.
 
 ### Credits
 
