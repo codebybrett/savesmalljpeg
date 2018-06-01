@@ -36,16 +36,6 @@ The preset settings window:
 * Preset file is a simplified XML file that could be distributed.
 * Simple user interface.
 
-Interal processing workflow:
-
-* Duplicate, flatten, optional preparation action.
-* Optional rotation, resize image to fit within optional presentation borders, optional sharpening.
-* Optional presentation action and flatten.
-* Extend canvas, background colour, position image according to presention options.
-* Optional final background action.
-* Convert to output profile, convert to 8bit.
-* Save iteratively until specified filesize achieved while maximising JPEG quality.
-
 ## Where to download
 
 Save the script to a folder on your computer from this link: [savesmalljpeg.jsx](savesmalljpeg.jsx).  Depending on your browser you may need to right-click on the link and use the "Save Target As..." or "Save Link As..." option.
@@ -64,7 +54,7 @@ To create a new preset, first choose an existing preset that's close to what you
 
 The default preset is designed to make life easy for members of the camera club I attend, but can be removed. To remove a preset you click the "Remove preset permanently" button. This button is enabled once there are two or more presets defined.
 
-### Defining a preset
+## Defining a preset
 
 Click the "Define" button to open the settings for a preset.  Make changes as necessary and Click "Ok" to save the changes or click "Cancel" (or hit Esc key) to cancel changes.
 
@@ -72,13 +62,13 @@ The settings here determine what images are procesed (one opened image or many i
 
 The tabs "Preparation", "Resizing", "Presentation" and "Finally" provide options for each of the processing steps of an image.
 
-### Folder processing
+## Folder processing
 
 Folder processing of images in a batch can be activated by changing "Process the current image only" to "Process all images in a folder".  The operation of the main dialog changes for this option.
 
 On the main dialog, a "Browse" button becomes available to choose the folder of images to process. The "Run" button starts the batch process.
 
-### Photoshop upgrades and versions
+## Photoshop upgrades and versions
 
 If you upgrade Photoshop you may find that your settings of the script are not avaiable in the new version. Photoshop stores settings per version so if you want you can manually copy the the script's settings file to the new version of photoshop.
 
@@ -90,6 +80,18 @@ The script settings file is called:
 
     SaveSmallJpegSettings.xml
 
-### License
+## Processing workflow
+
+The script does these steps.
+
+* Duplicate, flatten, optional preparation action.
+* Optional rotation, resize image to fit within optional presentation borders, optional sharpening.
+* Optional presentation action and flatten.
+* Extend canvas, background colour, position image according to presention options.
+* Optional final background action.
+* Convert to output profile, convert to 8bit.
+* Save iteratively until specified filesize achieved while maximising JPEG quality.
+
+## License
 
 It's an MIT license, which can be found in the GitHub repository.  Essentially, you are free to use this script on the understanding that you do so at your own risk.
