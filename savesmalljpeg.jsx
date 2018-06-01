@@ -63,7 +63,7 @@ bringToFront();
         // Used with getCustomOptions
         // var scriptUUID = "c1025640-4ccf-11dd-ae16-0800200c9a66"
 
-var scriptVersion = '1.40';
+var scriptVersion = '1.41';
 
 // Using a file to store data between sessions - hopefully will work with older versions.
 var configDataFile = new File (app.preferencesFolder)
@@ -3082,14 +3082,21 @@ try {
         for (var i=0; i<filesToProcess.length;i++) {
             imageFile = filesToProcess[i];
             saveFile = namingFn(imageFile);
-        if (saveFile.fullName == imageFile.fullName) someWillOverwriteOriginal = true;
-        if (saveFile.exists) someAlreadyExist = true;
-        outputFiles[i] = saveFile;
+            var idx = filesToProcess.indexWhen(
+                function (x) {
+                    return (x.fullName == saveFile.fullName)
+                }
+            ); // Search all original files for this name.
+            if (idx >= 0)
+                someWillOverwriteOriginal = true;
+            if (saveFile.exists)
+                someAlreadyExist = true;
+            outputFiles[i] = saveFile;
         };
 
         // Check that they won't overwrite orginal.
         if (someWillOverwriteOriginal) {
-            alert ("Some new files will have the same name as their original. Process cancelled. Consider using a different naming option or using a subfolder.");
+            alert ("Some original files would be replaced by continuing. Process cancelled. Consider using a different naming option or using a subfolder.");
             throw "Script cancelled.";
         };
 
