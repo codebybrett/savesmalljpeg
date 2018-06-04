@@ -63,7 +63,7 @@ bringToFront();
         // Used with getCustomOptions
         // var scriptUUID = "c1025640-4ccf-11dd-ae16-0800200c9a66"
 
-var scriptVersion = '1.41';
+var scriptVersion = '1.42';
 
 // Using a file to store data between sessions - hopefully will work with older versions.
 var configDataFile = new File (app.preferencesFolder)
@@ -598,7 +598,7 @@ function Settings () {
                 // As we are doing the upgrade again here in 1.15, the redundant upgrade
                 // code for 1.10 has been removed.
                 if (isNumeric(preset.inputOption)) {
-                    preset.inputOption = mdl.InputOptions[Number(preset.inputOption)].name;
+                    preset.inputOption = pmdl.InputOptions[Number(preset.inputOption)].name;
                 };
 
                 // Introduced placementAction.
@@ -689,7 +689,7 @@ function Settings () {
 
         // Save configuration settings for next run.
         try {
-             this.userData.scriptVersion = scriptVersion;
+            this.userData.scriptVersion = scriptVersion;
             var xml = this.formXML();
             var fileIsOpen = configDataFile.open('w')
             if (configDataFile.error != "") throw configDataFile.error;
@@ -804,10 +804,28 @@ ActionOptionFieldType.prototype.updPreset = function (preset) {
 };
 
 // ================================================================================
+// Main Options
+// ================================================================================
+
+function MainOptions () {
+
+    this.AfterSaveBehaviourOptions = [
+        {
+            name: '',
+            text: 'None'
+        },
+        {
+            name: 'open',
+            text: 'Open the created image in Photoshop'
+        }
+    ];
+};
+
+// ================================================================================
 // Preset Options
 // ================================================================================
 
-function PresetOptions (psTool) {
+function PresetOptions () {
 
     this.getOptionIndxFor = function (name, optionsName) {
         var options = this[optionsName];
@@ -1069,6 +1087,121 @@ function SimpleRule (field, desc, isValid) {
     this.field = field;
     this.description = desc;
     this.isValid = isValid;
+};
+
+function MainEditModel (mainOpts, runOptions, settings) {
+
+    // --------------------------------------------------------------------------------
+    // State varaibles.
+
+    this.options = mainOpts;
+    this.rnOpts = runOptions;
+    this.sttngs = settings;
+
+    this.mvlu = this.sttngs.userData;
+
+    this.processFldr = null;
+
+    // --------------------------------------------------------------------------------
+    // Setters and Getters.
+
+    this.setCurrentPreset = function (idx) {
+        $.writeln('setCurrentPreset ' + idx);
+        this.mvlu.currentPreset = idx;
+        var preset = this.sttngs.userData.preset[idx];
+    };
+
+    this.getCurrentPreset = function () {
+        var idx = Number(this.mvlu.currentPreset);
+        var preset = this.mvlu.preset[idx];
+        return preset;
+    };
+
+    this.getCurrentPresetIdx = function () {
+        var idx = Number(this.mvlu.currentPreset);
+        return idx;
+    };
+
+    this.getPresetSummary = function (idx) {
+        var preset = this.mvlu.preset[idx];
+
+        var txt = preset.maxWidthPx + "x" + preset.maxHeightPx + " pixels " 
+            + "8bit \'" + preset.colourProfileName + "\'";
+        if (preset.maxFilesizeKb != "")
+            txt = txt + " (" + preset.maxFilesizeKb + "Kb max.)"
+        else
+            txt = txt + " (maximum quality)";
+
+        return txt;
+    };
+
+    this.getCurrentPresetSummary = function (idx) {
+        var idx = this.mvlu.currentPreset;
+        var txt = this.getPresetSummary(idx);
+        return txt;
+    };
+
+    this.setProcessFolder = function (folder) {
+        $.writeln('setProcessFolder ' + folder);
+        this.processFldr = folder;
+    };
+
+    this.getProcessFolderTxt = function () {
+        return this.processFldr.fsName;
+    };
+
+    this.getProcessLastFolder = function () {
+        var lastFolder = null;
+        if (this.processFldr) {
+            lastFolder = this.processFldr;
+        } else {
+            lastFolder = Folder(this.sttngs.userData.lastProcessed);
+        };
+        return lastFolder;
+    };
+
+    // --------------------------------------------------------------------------------
+    // Helpers that translate between state types to
+    // presentation types.
+
+    this.setBooleanOption = function (field, value, optionsName) {
+        var options = this.options[optionsName];
+        var option = options[value ? 1 : 0];
+        var code = option.name;
+        this.mvlu[field] = code;
+        $.writeln('setBooleanOption ' + field + ' ' + option.name);
+    };
+
+    this.getBooleanOption = function (field, optionsName) {
+        var options = this.options[optionsName];
+        var code = this.mvlu[field];
+        var trueOption = options[1];
+        var isTrueOption = (code == trueOption.name)
+        return isTrueOption;
+    };
+
+    // --------------------------------------------------------------------------------
+    // Modification
+
+    this.removePreset = function () {
+        var idx = this.mvlu.currentPreset;
+        this.sttngs.deletePreset(idx);
+    };
+
+    this.savePreset = function (editedPreset) {
+        var idx = this.mvlu.currentPreset;
+        var existingPreset = this.mvlu.preset[idx];
+        if (existingPreset.name == editedPreset.name)
+            // Same name, update existing preset.
+            this.mvlu.preset[idx] = editedPreset
+        else
+            // Different name, create new preset - alphabetical order.
+            this.sttngs.insertPreset(editedPreset);
+    };
+
+    // --------------------------------------------------------------------------------
+    // Helpers
+
 };
 
 function PresetEditModel (presetOpts, preset) {
@@ -1415,7 +1548,8 @@ function PresetEditModel (presetOpts, preset) {
 
     this.brokenRules = function () {
 
-        if (!this.rules) this.makeRules(); // Create when needed.
+        if (!this.rules)
+            this.makeRules(); // Create when needed.
 
         var result = new Array();
         var rule = null;
@@ -1495,7 +1629,7 @@ function PresetEditModel (presetOpts, preset) {
 // Handles all events on the dialog.
 // ================================================================================
 
-function showUiMain (runOptions, settings) {
+function showUiMain (mmdl) {
 
     // --------------------------------------------------------------------------------
     // Resource specification.
@@ -1512,9 +1646,8 @@ function showUiMain (runOptions, settings) {
             btnDefinePreset:Button{bounds:[585,20,660,40] , text:'Define' , helpTip: 'Define the settings for this preset, or a new preset based on this one.'},\
             stDescription:StaticText{bounds:[74,46,570,66] , text:''  ,properties:{readonly:true}, helpTip: 'Description of settings to use.'},\
             \
-            stName:StaticText{bounds:[15,80,60,100] , text:'Name:' },\
-            stProcess:StaticText{bounds:[15,80,60,100] , text:'Process:' },\
-            etName:EditText{bounds:[70,80,570,100] , text:'' , helpTip: 'Enter the name for this image.'},\
+            stProcess:StaticText{bounds:[15,80,60,100] , text:'Process:', justify: 'right' },\
+            etFilename:EditText{bounds:[70,80,570,100] , text:'' , helpTip: 'Enter the name for this image.'},\
             etToProcess:EditText{bounds:[70,80,570,100] , visible:false; text:'' ,properties:{readonly:true}, helpTip: 'The images located here will be processed.'},\
             btnBrowse:Button{bounds:[585,80,660,100] , text:'Browse...' , helpTip: 'Browse for a folder to process.'},\
             stFolderDisplay:StaticText{bounds:[70,105,570,125] , text:''  ,properties:{readonly:true}, helpTip:'Your image will be stored here.'},\
@@ -1554,11 +1687,10 @@ function showUiMain (runOptions, settings) {
         // Layout the other controls in reference to the drop down list box at the top.
         this.st1.location.y = this.ddPreset.location.y + stOffset;
         this.st1.location.x = this.ddPreset.location.x - lblSpace - this.st1.size.width;
-        this.stName.location.y = this.etName.location.y + stOffset;
-        this.stName.location.x = this.etName.location.x - lblSpace - this.stName.size.width;
-        this.stProcess.location.y = this.etName.location.y + stOffset;
-        this.stProcess.location.x = this.etName.location.x - lblSpace - this.stProcess.size.width;
-    }
+        this.stProcess.location.y = this.etFilename.location.y + stOffset;
+        this.stProcess.location.x = this.etFilename.location.x - lblSpace - this.stProcess.size.width;
+    };
+
     win.adjustLayout();
 
     win.text = win.text + ' ' + scriptVersion;
@@ -1574,53 +1706,8 @@ function showUiMain (runOptions, settings) {
     // Keeps window text and parameters in sync with preset choice.
     // --------------------------------------------------------------------------------
 
-    win.updateDescriptionFromPreset = function  () {
-
-        // Using the currently selected preset...
-        var preset = this.settings.userData.preset[this.ddPreset.selection.index]
-
-        // Update the description text on the window.
-        var tmpTxt = preset.maxWidthPx + "x" + preset.maxHeightPx + " pixels " 
-            + "8bit \'" + preset.colourProfileName + "\'";
-        if (preset.maxFilesizeKb != "")
-            tmpTxt = tmpTxt + " (" + preset.maxFilesizeKb + "Kb max.)"
-        else
-            tmpTxt = tmpTxt + " (maximum quality)";
-        this.stDescription.text = tmpTxt;
-    };
-
-    win.updateImageParametersFromPreset = function  () {
-
-        // Using the currently selected preset...
-        var preset = this.settings.userData.preset[this.ddPreset.selection.index]
-
-        // Set the image parameters according to the current Preset.
-        this.runOptions.imageParameters = new Object();
-        this.runOptions.imageParameters.width = new UnitValue(preset.maxWidthPx + " pixels") ;
-        this.runOptions.imageParameters.height = new UnitValue(preset.maxHeightPx + "pixels");
-        this.runOptions.imageParameters.reductionMethod = preset.reductionMethodOption;
-        this.runOptions.imageParameters.namingBehaviour = preset.namingBehaviour;
-        this.runOptions.imageParameters.imageRotationOptions = preset.imageRotationOptions;
-        this.runOptions.imageParameters.placeOnCanvasBehaviour = preset.placeOnCanvasBehaviour;
-        this.runOptions.imageParameters.backgroundOptions = preset.backgroundOptions;
-        this.runOptions.imageParameters.canvasOpt1 = preset.canvasOpt1;
-        this.runOptions.imageParameters.canvasOpt2 = preset.canvasOpt2;
-        this.runOptions.imageParameters.canvasOpt3 = preset.canvasOpt3;
-        this.runOptions.imageParameters.canvasOpt4 = preset.canvasOpt4;
-        this.runOptions.imageParameters.postResizeSharpening = preset.postResizeSharpening;
-        this.runOptions.imageParameters.postResizeSharpeningOpt = preset.postResizeSharpeningOpt;
-        this.runOptions.imageParameters.imageActionOneSet = preset.imageActionOneSet;
-        this.runOptions.imageParameters.imageActionOneName = preset.imageActionOneName;
-        this.runOptions.imageParameters.placementActionSet = preset.placementActionSet;
-        this.runOptions.imageParameters.placementActionName = preset.placementActionName;
-        this.runOptions.imageParameters.backgroundActionLastSet = preset.backgroundActionLastSet;
-        this.runOptions.imageParameters.backgroundActionLastName = preset.backgroundActionLastName;
-        this.runOptions.imageParameters.colourProfile = preset.colourProfileName.toString();
-        if (preset.maxFilesizeKb == "")
-            this.runOptions.imageParameters.maxFilesizekb = null
-        else
-            this.runOptions.imageParameters.maxFilesizekb = Number(preset.maxFilesizeKb);
-        this.runOptions.imageParameters.smallImageWarning = (preset.smallImageCheck == "warn");
+    win.syncSummary = function  () {
+        this.stDescription.text = mmdl.getCurrentPresetSummary();
     };
 
     // --------------------------------------------------------------------------------
@@ -1631,13 +1718,19 @@ function showUiMain (runOptions, settings) {
 
         var today = new Date();
         var dayInMilliseconds = (24*60*60*1000);
+
         var theNextFirstWednesdayInMonth = function () {
             targetDate = today;
-            for (var x=today; ((x.getDay() != 3) || ((x.getDate() - 7 ) > 0)); x.setTime(x.getTime() + dayInMilliseconds)) {
+            for (
+                var x=today;
+                ((x.getDay() != 3) || ((x.getDate() - 7 ) > 0));
+                x.setTime(x.getTime() + dayInMilliseconds)
+            ) {
                 var targetDate = x;
             };
             return targetDate;
         }
+
         var formatDate = function (date, format) {
             var yyyy = function () {return date.getFullYear()};
             var yy = function() {var x; if ( (x=date.getYear() - 100 ) < 10) x = "0" + x; return x;}
@@ -1662,23 +1755,23 @@ function showUiMain (runOptions, settings) {
         };
 
         // Using the currently selected preset...
-        var preset = this.settings.userData.preset[this.ddPreset.selection.index]
+        var preset = mmdl.getCurrentPreset();
         var currentImageOnly = (preset.inputOption == "currentImage");
         var savingToSourceFolder = (preset.saveBehaviour == 'saveToSourceFolder')
         var destinationTxt;
 
         // Updating this here, because we use the folder that was displayed to the user.
-        this.runOptions.saveFolder = null;
+        mmdl.rnOpts.saveFolder = null;
 
         this.etToProcess.visible = false;
-        this.etName.visible = false;
+        this.etFilename.visible = false;
 
         if ('ask' == preset.saveBehaviour) {
             
             // ---------------------------------
             // Prompt for save location
               
-            this.etName.text = "";
+            this.etFilename.text = "";
             this.saveBtn.text = "Save As..."
             this.allowOk = function () {
                 return (psTool.isDocumentActive())
@@ -1686,119 +1779,117 @@ function showUiMain (runOptions, settings) {
             destinationTxt = "You will be prompted to choose a folder and enter an image name.";
             
         } else {
-            
-                // ---------------------------------
-                // Save to a Folder
+        
+            // ---------------------------------
+            // Save to a Folder
 
-                //  Set options according to processing mode.
+            //  Set options according to processing mode.
+            if (currentImageOnly) {
+                
+                //  Single image mode.
+                this.etFilename.visible = true;
+                this.stProcess.text = 'Name:';
+                this.saveBtn.text = "Save"
+                this.allowOk = function () {
+                    return (
+                        (psTool.isDocumentActive())
+                        && (this.etFilename.text != "")
+                    )
+                };  // Allow ok once a name has been input.
+                
+            } else {
+                
+                //  Batch image mode.
+                this.etToProcess.visible = true;
+                this.stProcess.text = 'Process:';
+                this.saveBtn.text = "Run"
+                this.allowOk = function () {
+                    return (this.etToProcess.text != "")
+                };  // Allow Ok once processing folder is specified.
+            
+            };
+
+            // Calculate subfolder.
+
+            var subfolderTxt = '';
+            switch (preset.subFolderOption) {
+                case "none":
+                    break;
+                case "const-edi":
+                case "const-jpg":
+                case "const-prints":
+                case "const-thumbs":
+                case "const-smalljpeg":
+                    subfolderTxt = pstOpts.SubfolderOptions[pstOpts.getOptionIndxFor(preset.subFolderOption,'SubfolderOptions')].text;
+                    break;
+                case "firstwed-yymm":
+                    var theDate = theNextFirstWednesdayInMonth();
+                    subfolderTxt = formatDate(theDate, "yymm");
+                    break;
+                case "firstwed-yyyymmdd":
+                    var theDate = theNextFirstWednesdayInMonth();
+                    subfolderTxt = formatDate(theDate, "yyyymmdd");
+                    break;
+                default:
+                    var idx = pstOpts.getOptionIndxFor(preset.subFolderOption,'SubfolderOptions');
+                    var textFormat = pstOpts.SubfolderOptions[idx].text;
+                    subfolderTxt = formatDate(today, textFormat);
+            };
+        
+            // Saving to a folder - curent image or batch?
+            // Saving to the same folder as original or to a specified folder?
+            
+            // Set outputFolder only if we have some specification.
+            var outputFolder = null;
+            if (savingToSourceFolder) {
                 if (currentImageOnly) {
-                    
-                    //  Single image mode.
-                    this.etName.visible = true;
-                    this.saveBtn.text = "Save"
-                    this.allowOk = function () {
-                        return (
-                            (psTool.isDocumentActive())
-                            && (this.etName.text != "")
-                        )
-                    };  // Allow ok once a name has been input.
-                    
+                    // In current image mode we have the folder if the document is open and previously saved.
+                    var documentIsOpen = false;
+                    try {
+                        app.activeDocument; // Testing to see if the current image is open.
+                        outputFolder = new Folder (app.activeDocument.path);
+                        outputFolder.changePath(subfolderTxt);
+                        documentIsOpen = true;
+                    } catch (e) {}
                 } else {
-                    
-                    //  Batch image mode.
-                    this.etToProcess.visible = true;
-                    this.saveBtn.text = "Run"
-                    this.allowOk = function () {
-                        return (this.etToProcess.text != "")
-                    };  // Allow Ok once processing folder is specified.
-                
-                };
-
-                // Calculate subfolder.
-
-                var subfolderTxt = '';
-                switch (preset.subFolderOption) {
-                    case "none":
-                        break;
-                    case "const-edi":
-                    case "const-jpg":
-                    case "const-prints":
-                    case "const-thumbs":
-                    case "const-smalljpeg":
-                        subfolderTxt = pstOpts.SubfolderOptions[pstOpts.getOptionIndxFor(preset.subFolderOption,'SubfolderOptions')].text;
-                        break;
-                    case "firstwed-yymm":
-                        var theDate = theNextFirstWednesdayInMonth();
-                        subfolderTxt = formatDate(theDate, "yymm");
-                        break;
-                    case "firstwed-yyyymmdd":
-                        var theDate = theNextFirstWednesdayInMonth();
-                        subfolderTxt = formatDate(theDate, "yyyymmdd");
-                        break;
-                    default:
-                        var idx = pstOpts.getOptionIndxFor(preset.subFolderOption,'SubfolderOptions');
-                        var textFormat = pstOpts.SubfolderOptions[idx].text;
-                        subfolderTxt = formatDate(today, textFormat);
-                };
-            
-                // Saving to a folder - curent image or batch?
-                // Saving to the same folder as original or to a specified folder?
-                
-                // Set outputFolder only if we have some specification.
-                var outputFolder = null;
-                if (savingToSourceFolder) {
-                    if (currentImageOnly) {
-                        // In current image mode we have the folder if the document is open and previously saved.
-                        var documentIsOpen = false;
-                        try {
-                            app.activeDocument; // Testing to see if the current image is open.
-                            outputFolder = new Folder (app.activeDocument.path);
-                            outputFolder.changePath(subfolderTxt);
-                            documentIsOpen = true;
-                        } catch (e) {}
-                    } else {
-                        // In batch mode - we will have the folder only if the process folder has been specified.
-                        if (this.etToProcess.text != '') {
-                            outputFolder = new Folder (this.etToProcess.text);
-                            outputFolder.changePath(subfolderTxt);
-                        }
+                    // In batch mode - we will have the folder only if the process folder has been specified.
+                    if (this.etToProcess.text != '') {
+                        outputFolder = new Folder (this.etToProcess.text);
+                        outputFolder.changePath(subfolderTxt);
                     }
-                } else {
-                    // We should have a folder specified already in our preset.
-                    outputFolder = new Folder (preset.saveFolder);
-                    outputFolder.changePath(subfolderTxt);
-                };
+                }
+            } else {
+                // We should have a folder specified already in our preset.
+                outputFolder = new Folder (preset.saveFolder);
+                outputFolder.changePath(subfolderTxt);
+            };
 
-                // Set the text that describes the folder location
+            mmdl.rnOpts.saveFolder = outputFolder;
 
-                var destinationfolderTxt;
-                if (savingToSourceFolder  && !outputFolder)
-                    if (subfolderTxt == "")
-                        destinationfolderTxt = " the same folder as the original image."
-                    else
-                        destinationfolderTxt = " subfolder: " + subfolderTxt
+            // Set the text that describes the folder location
+
+            var destinationfolderTxt;
+            if (savingToSourceFolder  && !outputFolder)
+                if (subfolderTxt == "")
+                    destinationfolderTxt = " the same folder as the original image."
                 else
-                    destinationfolderTxt = ": " + outputFolder.fsName;
+                    destinationfolderTxt = " subfolder: " + subfolderTxt
+            else
+                destinationfolderTxt = ": " + outputFolder.fsName;
 
-                if (currentImageOnly)
-                    destinationTxt = 'Saving in' + destinationfolderTxt
+            if (currentImageOnly)
+                destinationTxt = 'Saving in' + destinationfolderTxt
+            else
+                if (preset.namingBehaviour == "original")
+                    destinationTxt =  'Saving in' + destinationfolderTxt
                 else
-                    if (preset.namingBehaviour == "original")
-                        destinationTxt =  'Saving in' + destinationfolderTxt
-                    else
-                        destinationTxt = 'Rename, save in' + destinationfolderTxt;
-               
-               this.runOptions.saveFolder = outputFolder;
-            
-         };
-        this.stName.visible = this.etName.visible;
-        this.stProcess.visible = this.etToProcess.visible;
+                    destinationTxt = 'Rename, save in' + destinationfolderTxt;            
+        };
+
         this.cbOpenAfterSave.visible = !this.etToProcess.visible;
         this.btnBrowse.visible = this.etToProcess.visible;
 
         this.stFolderDisplay.text = destinationTxt;
-
-        this.syncMainValidationState();
     };
 
     // --------------------------------------------------------------------------------
@@ -1809,28 +1900,35 @@ function showUiMain (runOptions, settings) {
         // Loads the controls in the window with values and event handlers.
         //
 
-        // Disable the onChange event while we play with the ddlbox.
+        // Disable the handlers while re-syncing.
         this.ddPreset.onChange = null;
+        this.cbOpenAfterSave.onClick = null;
 
         // Load the window with the settings information.
-        this.ddPreset.removeAll()
-        for (var i=0; i < this.settings.userData.preset.length; i++) 
-            win.ddPreset.add('item', this.settings.userData.preset[i].name);
+        this.ddPreset.removeAll();
+        for (var i=0; i < mmdl.mvlu.preset.length; i++) 
+            win.ddPreset.add('item', mmdl.mvlu.preset[i].name);
 
-        // Had some odd behaviour during development hence the presetIndex variable to allow
-        // "time" for ddl to update.
-        var presetIndex = Number(this.settings.userData.currentPreset);
-        this.ddPreset.selection = presetIndex;
+        this.ddPreset.selection = mmdl.getCurrentPresetIdx();
 
-        this.updateDescriptionFromPreset();
-        this.updateImageParametersFromPreset();
+        this.syncSummary();
         this.updateRunOptionSaveFolder();
+        this.syncMainValidationState();
 
-        this.cbOpenAfterSave.value = (this.settings.userData.afterSaveBehaviour == "open")
+        this.cbOpenAfterSave.value = mmdl.getBooleanOption(
+            'afterSaveBehaviour', 'AfterSaveBehaviourOptions'
+        );
 
-        // Set the handler for the preset ddlbox.
+        // Set the handlers.
         this.ddPreset.onChange = function () {
-            this.parent.handleMsg({type: "Preset changed", value: this.selection.index})
+            win.cmdChangePreset();
+        };
+        this.cbOpenAfterSave.onClick = function () {
+            mmdl.setBooleanOption(
+                'afterSaveBehaviour',
+                win.cbOpenAfterSave.value,
+                'AfterSaveBehaviourOptions'
+            );
         };
 
     };
@@ -1839,41 +1937,69 @@ function showUiMain (runOptions, settings) {
     // Store user settings made on the main dialog.
     // --------------------------------------------------------------------------------
     
-    win.updateSettings = function () {
+    win.finaliseRunOptions = function () {
+
         // Save settings of this dialog.
-        var presetIndex = Number(this.ddPreset.selection.index);
-        this.settings.userData.currentPreset = presetIndex;
-        var preset = this.settings.userData.preset[presetIndex];
-        if (this.cbOpenAfterSave.value)
-            this.settings.userData.afterSaveBehaviour = "open"
+        var preset = mmdl.getCurrentPreset();
+        var prcOpt = mmdl.rnOpts;
+        var imgp = new Object();
+
+        prcOpt.openAfterSave = this.cbOpenAfterSave.value;
+
+        prcOpt.inputOption = preset.inputOption;
+
+        if (preset.inputOption == "currentImage")
+            prcOpt.inputName = this.etFilename.text
         else
-            this.settings.userData.afterSaveBehaviour = "";
-        this.runOptions.inputOption = preset.inputOption;
-        if (this.settings.userData.preset[presetIndex].inputOption == "currentImage")
-            this.runOptions.inputName = this.etName.text
+            prcOpt.inputName = this.etToProcess.text;
+
+        // Set the image parameters according to the current Preset.
+        prcOpt.imageParameters = imgp;
+        imgp.width = new UnitValue(preset.maxWidthPx + " pixels") ;
+        imgp.height = new UnitValue(preset.maxHeightPx + "pixels");
+        imgp.reductionMethod = preset.reductionMethodOption;
+        imgp.namingBehaviour = preset.namingBehaviour;
+        imgp.imageRotationOptions = preset.imageRotationOptions;
+        imgp.placeOnCanvasBehaviour = preset.placeOnCanvasBehaviour;
+        imgp.backgroundOptions = preset.backgroundOptions;
+        imgp.canvasOpt1 = preset.canvasOpt1;
+        imgp.canvasOpt2 = preset.canvasOpt2;
+        imgp.canvasOpt3 = preset.canvasOpt3;
+        imgp.canvasOpt4 = preset.canvasOpt4;
+        imgp.postResizeSharpening = preset.postResizeSharpening;
+        imgp.postResizeSharpeningOpt = preset.postResizeSharpeningOpt;
+        imgp.imageActionOneSet = preset.imageActionOneSet;
+        imgp.imageActionOneName = preset.imageActionOneName;
+        imgp.placementActionSet = preset.placementActionSet;
+        imgp.placementActionName = preset.placementActionName;
+        imgp.backgroundActionLastSet = preset.backgroundActionLastSet;
+        imgp.backgroundActionLastName = preset.backgroundActionLastName;
+        imgp.colourProfile = preset.colourProfileName.toString();
+        if (preset.maxFilesizeKb == "")
+            imgp.maxFilesizekb = null
         else
-            this.runOptions.inputName = this.etToProcess.text;
-        this.runOptions.openAfterSave = this.cbOpenAfterSave.value;
+            imgp.maxFilesizekb = Number(preset.maxFilesizeKb);
+        imgp.smallImageWarning = (preset.smallImageCheck == "warn");
     };
 
     // --------------------------------------------------------------------------------
     // Create Event handlers for the other dialog controls
     // --------------------------------------------------------------------------------
     
-    win.etName.onChanging = function () {
-        this.parent.syncMainValidationState() 
+    win.etFilename.onChanging = function () {
+        win.syncMainValidationState() 
     };
     win.btnDefinePreset.onClick = function () {
-        this.parent.handleMsg({type: "Define preset"}) 
+        win.cmdDefinePreset();
     };
     win.saveBtn.onClick = function () {
-        this.parent.handleMsg({type: "Save"});
+        win.cmdSave();
     };
     win.doneBtn.onClick = function () {
-        this.parent.handleMsg({type: "Done"});
+        win.cmdDone();
     };
     win.btnBrowse.onClick = function () {
-        this.parent.handleMsg({type: "ProcessFolderChoice"});
+        win.cmdChooseFolder();
     };
 
     // --------------------------------------------------------------------------------
@@ -1885,85 +2011,66 @@ function showUiMain (runOptions, settings) {
     };
 
     // --------------------------------------------------------------------------------
-    // Common Event handler for the dialog
+    // Command methods
     // --------------------------------------------------------------------------------
-    
-    win.handleMsg = function (msg) {
 
-        // Receives messages from child controls.
+    win.cmdChangePreset = function() {
+        var idx = this.ddPreset.selection.index;
+        mmdl.setCurrentPreset(idx);
+        this.syncSummary();
+        this.updateRunOptionSaveFolder();
+        this.syncMainValidationState();
+    };
 
-        switch (msg.type) {
-
-            case "Save":
-                this.close(1);
-                break;
-    
-            case "Done":
-                this.close(0);
-                break;
-    
-            case "Preset changed":
-    
-                this.settings.userData.currentPreset = msg.value;
-                this.updateDescriptionFromPreset();
-                this.updateImageParametersFromPreset();
-                this.updateRunOptionSaveFolder();
-                break;
-
-            case "Define preset":
-
-                var presetIndex = this.ddPreset.selection.index;
-                var preset = this.settings.userData.preset[presetIndex];
-
-                // Copy the preset for editing.
-                var editedPreset = new Object();
-                for(var fld in preset)
-                    editedPreset[fld] = preset[fld];
-
-                var isDeletePresetAllowed = (1 < this.settings.userData.preset.length);
-
-                var winEditModel = new PresetEditModel(pstOpts, editedPreset);
-                var uiPresetResult = showUiPreset(winEditModel, isDeletePresetAllowed);
-
-                switch (uiPresetResult) {
-                    case -1: // Delete Preset
-                        this.settings.deletePreset(presetIndex);
-                        break;
-                    case 1: // Preset modified
-                        if (preset.name == editedPreset.name)
-                            // Same name, update existing preset.
-                            this.settings.userData.preset[presetIndex] = editedPreset;
-                        else {
-                            // Different name, create new preset - alphabetical order.
-                            this.settings.insertPreset(editedPreset);
-                        };
-                        break;
-                };
-                this.syncUiMain();
-                break;
-
-            case "ProcessFolderChoice":
-                  var startFolder;
-                  if (this.etToProcess.text == "") {
-                      startFolder = Folder(settings.userData.lastProcessed);
-                      // startFolder.changePath('..');  // Start dialog at parent folder next run?
-                  } else {
-                      startFolder = Folder(this.etToProcess.text);
-                  };
-                var usrFolder = startFolder.selectDlg ("Choose the folder to be processed:");
-                if (usrFolder) {
-                    this.etToProcess.text = usrFolder.fsName;
-                    this.updateRunOptionSaveFolder(); //1.10: Added so as to set the save to description correctly.
-                };
-                break;
-            
+    win.cmdChooseFolder = function() {
+        var lastFolder = mmdl.getProcessLastFolder();
+        var usrFolder = lastFolder.selectDlg ("Choose the folder to be processed:");
+        if (usrFolder) {
+            mmdl.setProcessFolder(usrFolder);
+            this.etToProcess.text = mmdl.getProcessFolderTxt();
+            this.updateRunOptionSaveFolder(); //1.10: Added so as to set the save to description correctly.
+            this.syncMainValidationState();
         };
     };
 
-    // Window reference to settings.
-    win.runOptions = runOptions; // Processing settings.
-    win.settings = settings; // Script configuration settings saved to file.
+    win.cmdDefinePreset = function() {
+        var idx = this.ddPreset.selection.index;
+        var preset = mmdl.sttngs.userData.preset[idx];
 
+        // Copy the preset for editing.
+        var editedPreset = new Object();
+        for(var fld in preset)
+            editedPreset[fld] = preset[fld];
+
+        var isDeletePresetAllowed = (1 < mmdl.sttngs.userData.preset.length);
+
+        var winEditModel = new PresetEditModel(pstOpts, editedPreset);
+        var uiPresetResult = showUiPreset(winEditModel, isDeletePresetAllowed);
+
+        switch (uiPresetResult) {
+            case -1:
+                mmdl.removePreset();
+                break;
+            case 1:
+                mmdl.savePreset(editedPreset);
+                break;
+        };
+
+        this.syncUiMain();
+    };
+
+    win.cmdDone = function() {
+        this.close(0);
+    };
+
+    win.cmdSave = function() {
+        this.close(1);
+    };
+
+    // --------------------------------------------------------------------------------
+    // Setup, show and return.
+    // --------------------------------------------------------------------------------
+    
      // Synchronise the dialog.
     win.syncUiMain ();
 
@@ -1971,7 +2078,7 @@ function showUiMain (runOptions, settings) {
     var dialogResult = win.show();
 
     // Modify our settings every time - there is no cancel.
-    win.updateSettings();
+    win.finaliseRunOptions();
 
     return dialogResult;
 };
@@ -2005,13 +2112,15 @@ function promptForJpgSaveFile (prompt) {
 // Handles everthing related to the preset dialog.
 // ================================================================================
 
-function showUiPreset (mdl, isDeletePresetAllowed) {
+function showUiPreset (pmdl, isDeletePresetAllowed) {
 
     // --------------------------------------------------------------------------------
     // Preset dialog resource string
     // --------------------------------------------------------------------------------
     
     // Some StaticText have a text of "<size>" set so layout assigns a reasonable width.
+    // etToProcess and etFilename seem like they are redundant, but not so, because
+    // creation properies like 'ReadOnly' cannot be changed after the control is created.
 
     var uiPreset = // dialog resource object
         "dialog { \
@@ -2209,7 +2318,7 @@ function showUiPreset (mdl, isDeletePresetAllowed) {
 
     // Populate list boxes.
     var populateListBox = function (listBox, field) {
-        var options = mdl.field[field].options;
+        var options = pmdl.field[field].options;
         for (var i=0; i < options.length; i++) {
             var obj = options[i];
             var listItem = listBox.add('item', obj.text);
@@ -2236,19 +2345,19 @@ function showUiPreset (mdl, isDeletePresetAllowed) {
     var setEventHandlers = function () {
 
         ui.uiAskOnSaveOption.onClick = function () {
-            mdl.setOptionValue('saveBehaviour', 'ask');
+            pmdl.setOptionValue('saveBehaviour', 'ask');
             win.syncPresetSaveBehaviour();
             win.syncPresetValidation();
         };
 
         ui.uiSaveToSourceFolderOption.onClick = function ()  {
-            mdl.setOptionValue('saveBehaviour', 'saveToSourceFolder');
+            pmdl.setOptionValue('saveBehaviour', 'saveToSourceFolder');
             win.syncPresetSaveBehaviour();
             win.syncPresetValidation();
         };
 
         ui.uiSpecificFolderOption.onClick = function () {
-            mdl.setOptionValue('saveBehaviour', 'saveToSaveFolder');
+            pmdl.setOptionValue('saveBehaviour', 'saveToSaveFolder');
             win.syncPresetSaveBehaviour();
             win.syncPresetValidation();
         };
@@ -2261,7 +2370,7 @@ function showUiPreset (mdl, isDeletePresetAllowed) {
             startFolder.changePath("..");
             var usrFolder = startFolder.selectDlg ("Choose a folder to store your images:");
             if (usrFolder) {
-                mdl.setSaveFolderChoice(usrFolder);
+                pmdl.setSaveFolderChoice(usrFolder);
                 win.syncPresetSaveBehaviour();
             };
 
@@ -2269,87 +2378,87 @@ function showUiPreset (mdl, isDeletePresetAllowed) {
         };
 
         ui.uiPresetName.onChanging = function () {
-            mdl.setText('name', this.text);
+            pmdl.setText('name', this.text);
             win.syncPresetValidation();
         };
 
         ui.uiInputOption.onChange = function () {
-            mdl.setInputOption(this.selection.index);
+            pmdl.setInputOption(this.selection.index);
             win.syncPresetSaveBehaviour();
             win.syncPresetValidation();
         };
 
         ui.uiReductionMethodOption.onChange = function () {
-            mdl.setOptionIdx('reductionMethodOption', this.selection.index);
+            pmdl.setOptionIdx('reductionMethodOption', this.selection.index);
             win.syncPresetValidation();
         };
 
         ui.uiSubfolderOption.onChange = function () {
-            mdl.setOptionIdx('subFolderOption', this.selection.index);
+            pmdl.setOptionIdx('subFolderOption', this.selection.index);
         };
 
         ui.uiNamingBehaviour.onChange = function () {
-            mdl.setOptionIdx('namingBehaviour', this.selection.index);
+            pmdl.setOptionIdx('namingBehaviour', this.selection.index);
             win.syncPresetValidation();
         };
 
         ui.uiBackgroundOptions.onChange = function () {
-            mdl.setOptionIdx('backgroundOptions', this.selection.index);
+            pmdl.setOptionIdx('backgroundOptions', this.selection.index);
         };
 
         ui.uiPlaceOnCanvasBehaviour.onChange = function () {
-            mdl.setOptionIdx('placeOnCanvasBehaviour', this.selection.index);
+            pmdl.setOptionIdx('placeOnCanvasBehaviour', this.selection.index);
             win.syncPresetPresentation();
             win.syncPresetValidation();
         };
 
         ui.uiImageRotationOptions.onChange = function () {
-            mdl.setOptionIdx('imageRotationOption', this.selection.index);
+            pmdl.setOptionIdx('imageRotationOption', this.selection.index);
         };
 
         ui.uiPostResizeSharpening.onChange = function () {
-            mdl.setOptionIdx('postResizeSharpening', this.selection.index);
+            pmdl.setOptionIdx('postResizeSharpening', this.selection.index);
             win.syncPresetPostResizeSharpening();
             win.syncPresetValidation();
         };
 
         ui.uiPostResizeSharpeningOpt.onChanging = function () {
-            mdl.setText('postResizeSharpeningOpt', this.text);
+            pmdl.setText('postResizeSharpeningOpt', this.text);
             win.syncPresetValidation();
         };
 
         ui.uiImageActionOne.onChange = function () {
-            mdl.setOptionIdx('imageActionOne', this.selection.index);
+            pmdl.setOptionIdx('imageActionOne', this.selection.index);
         };
         ui.uiplacementAction.onChange = function () {
-            mdl.setOptionIdx('placementAction', this.selection.index);
+            pmdl.setOptionIdx('placementAction', this.selection.index);
         };
 
         ui.uibackgroundActionLast.onChange = function () {
-            mdl.setOptionIdx('backgroundActionLast', this.selection.index);
+            pmdl.setOptionIdx('backgroundActionLast', this.selection.index);
         };
 
         ui.uiMaxWidthPx.onChanging = function () {
-            mdl.setText('maxWidthPx', this.text);
+            pmdl.setText('maxWidthPx', this.text);
             win.syncPresetValidation();
         };
 
         ui.uiMaxHeightPx.onChanging = function () {
-            mdl.setText('maxHeightPx', this.text);
+            pmdl.setText('maxHeightPx', this.text);
             win.syncPresetValidation();
         };
 
         ui.uiMaxFilesizeKb.onChanging = function () {
-            mdl.setText('maxFilesizeKb', this.text);
+            pmdl.setText('maxFilesizeKb', this.text);
             win.syncPresetValidation();
         };
 
         ui.uiPresetNotes.onChanging = function () {
-            mdl.setText('presetNotes', this.text);
+            pmdl.setText('presetNotes', this.text);
         };
 
         ui.uiSmallImageWarning.onClick = function () {
-            mdl.setBooleanOption('smallImageCheck',this.value,'SmallImageWarningOptions')
+            pmdl.setBooleanOption('smallImageCheck',this.value,'SmallImageWarningOptions')
         };
 
         ui.uiDelBtn.onClick = function () {
@@ -2357,22 +2466,22 @@ function showUiPreset (mdl, isDeletePresetAllowed) {
         };
         
         ui.uiCanvasOpt1.onChanging = function () {
-            mdl.setText('canvasOpt1', ui.uiCanvasOpt1.text);
+            pmdl.setText('canvasOpt1', ui.uiCanvasOpt1.text);
             win.syncPresetValidation();
         };
 
         ui.uiCanvasOpt2.onChanging = function () {
-            mdl.setText('canvasOpt2', ui.uiCanvasOpt2.text);
+            pmdl.setText('canvasOpt2', ui.uiCanvasOpt2.text);
             win.syncPresetValidation();
         };
 
         ui.uiCanvasOpt3.onChanging = function () {
-            mdl.setText('canvasOpt3', ui.uiCanvasOpt3.text);
+            pmdl.setText('canvasOpt3', ui.uiCanvasOpt3.text);
             win.syncPresetValidation();
         };
 
         ui.uiCanvasOpt4.onChanging = function () {
-            mdl.setText('canvasOpt4', ui.uiCanvasOpt4.text);
+            pmdl.setText('canvasOpt4', ui.uiCanvasOpt4.text);
             win.syncPresetValidation();
         };
     };
@@ -2383,7 +2492,7 @@ function showUiPreset (mdl, isDeletePresetAllowed) {
 
     win.syncPresetPostResizeSharpening = function () {
 
-        var isVisible = mdl.isOptionFieldValue(
+        var isVisible = pmdl.isOptionFieldValue(
             'postResizeSharpening',
             'sharpenForDigitalBFraser'
         );
@@ -2394,17 +2503,17 @@ function showUiPreset (mdl, isDeletePresetAllowed) {
 
     win.syncPresetPresentation = function () {
 
-        var isNoBehaviour = mdl.isOptionFieldValue(
+        var isNoBehaviour = pmdl.isOptionFieldValue(
             'placeOnCanvasBehaviour',
             'none'
         );
 
-        var isBordersMin = mdl.isOptionFieldValue(
+        var isBordersMin = pmdl.isOptionFieldValue(
             'placeOnCanvasBehaviour',
             'borders-min'
         );
 
-        var isScaleAndOffset = mdl.isOptionFieldValue(
+        var isScaleAndOffset = pmdl.isOptionFieldValue(
             'placeOnCanvasBehaviour',
             'scale-and-offset'
         );
@@ -2439,9 +2548,9 @@ function showUiPreset (mdl, isDeletePresetAllowed) {
 
     win.syncPresetSaveBehaviour = function () {
 
-        var currentImageOnly = (mdl.isOptionFieldValue('inputOption', 'currentImage'));
+        var currentImageOnly = (pmdl.isOptionFieldValue('inputOption', 'currentImage'));
 
-        var saveBehaviourOption = mdl.getOptionValue('saveBehaviour');
+        var saveBehaviourOption = pmdl.getOptionValue('saveBehaviour');
 
         ui.uiAskOnSaveOption.enabled = (currentImageOnly);
 
@@ -2449,25 +2558,25 @@ function showUiPreset (mdl, isDeletePresetAllowed) {
         ui.uiSaveToSourceFolderOption.value = (saveBehaviourOption == 'saveToSourceFolder');
         ui.uiSpecificFolderOption.value = (saveBehaviourOption == 'saveToSaveFolder');
     
-        ui.uiSaveFolder.text = mdl.getSaveFolder();
+        ui.uiSaveFolder.text = pmdl.getSaveFolder();
 
         ui.uiSaveFolder.visible = (ui.uiSpecificFolderOption.value);
         ui.uiSubfolderOption.visible = (!ui.uiAskOnSaveOption.value);
         ui.uiSubfolderOptionTxt.visible = ui.uiSubfolderOption.visible;
 
         ui.uiNamingBehaviour.selection
-            = mdl.getOptionIndex('namingBehaviour');
+            = pmdl.getOptionIndex('namingBehaviour');
 
         ui.uiNamingBehaviour.visible = (!currentImageOnly)
     };
 
     win.syncPresetValidation = function () {
 
-        var currentImageOnly = (mdl.isOptionFieldValue('inputOption', 'currentImage'));
+        var currentImageOnly = (pmdl.isOptionFieldValue('inputOption', 'currentImage'));
         ui.uiSaveRepeatWarning.visible = ((Number(ui.uiMaxFilesizeKb.text)) && (!currentImageOnly));
 
-        mdl.validate();
-        var problems = mdl.errors;
+        pmdl.validate();
+        var problems = pmdl.errors;
         var errorText = '';
         if (problems.length > 0) {
             errorText = problems.length + ' to fix.  ' + problems[0].description;
@@ -2484,46 +2593,46 @@ function showUiPreset (mdl, isDeletePresetAllowed) {
     // Load up the window
     // --------------------------------------------------------------------------------
 
-    ui.uiPresetName.text = mdl.getText('name');
+    ui.uiPresetName.text = pmdl.getText('name');
 
     // Requirements box.
-    ui.uiInputOption.selection = mdl.getOptionIndex('inputOption');
-    ui.uiColourProfile.text = mdl.getText('colourProfileName');
-    ui.uiMaxWidthPx.text = mdl.getText('maxWidthPx');
-    ui.uiMaxHeightPx.text = mdl.getText('maxHeightPx');
-    ui.uiMaxFilesizeKb.text = mdl.getText('maxFilesizeKb');
-    ui.uiSmallImageWarning.value = mdl.getBooleanOption('smallImageCheck', 'SmallImageWarningOptions');
-    ui.uiPresetNotes.text = mdl.getText('presetNotes');
+    ui.uiInputOption.selection = pmdl.getOptionIndex('inputOption');
+    ui.uiColourProfile.text = pmdl.getText('colourProfileName');
+    ui.uiMaxWidthPx.text = pmdl.getText('maxWidthPx');
+    ui.uiMaxHeightPx.text = pmdl.getText('maxHeightPx');
+    ui.uiMaxFilesizeKb.text = pmdl.getText('maxFilesizeKb');
+    ui.uiSmallImageWarning.value = pmdl.getBooleanOption('smallImageCheck', 'SmallImageWarningOptions');
+    ui.uiPresetNotes.text = pmdl.getText('presetNotes');
 
     // Preparation tab.
-    ui.uiImageActionOne.selection = mdl.getOptionIndex('imageActionOne');
+    ui.uiImageActionOne.selection = pmdl.getOptionIndex('imageActionOne');
 
     // Resizing tab.
-    ui.uiImageRotationOptions.selection = mdl.getOptionIndex('imageRotationOptions');
-    ui.uiReductionMethodOption.selection = mdl.getOptionIndex('reductionMethodOption');
+    ui.uiImageRotationOptions.selection = pmdl.getOptionIndex('imageRotationOptions');
+    ui.uiReductionMethodOption.selection = pmdl.getOptionIndex('reductionMethodOption');
     ui.uiPostResizeSharpening.selection
-        = mdl.getOptionIndex('postResizeSharpening');
+        = pmdl.getOptionIndex('postResizeSharpening');
     ui.uiPostResizeSharpeningOpt.text
-        = mdl.getText('postResizeSharpeningOpt');
+        = pmdl.getText('postResizeSharpeningOpt');
     win.syncPresetPostResizeSharpening();
 
     // Presentation tab.
-    ui.uiplacementAction.selection = mdl.getOptionIndex('placementAction');
-    ui.uiPlaceOnCanvasBehaviour.selection = mdl.getOptionIndex('placeOnCanvasBehaviour');
-    ui.uiBackgroundOptions.selection = mdl.getOptionIndex('backgroundOptions');
-    ui.uiCanvasOpt1.text = mdl.getText('canvasOpt1');
-    ui.uiCanvasOpt2.text = mdl.getText('canvasOpt2');
-    ui.uiCanvasOpt3.text = mdl.getText('canvasOpt3');
-    ui.uiCanvasOpt4.text = mdl.getText('canvasOpt4');
+    ui.uiplacementAction.selection = pmdl.getOptionIndex('placementAction');
+    ui.uiPlaceOnCanvasBehaviour.selection = pmdl.getOptionIndex('placeOnCanvasBehaviour');
+    ui.uiBackgroundOptions.selection = pmdl.getOptionIndex('backgroundOptions');
+    ui.uiCanvasOpt1.text = pmdl.getText('canvasOpt1');
+    ui.uiCanvasOpt2.text = pmdl.getText('canvasOpt2');
+    ui.uiCanvasOpt3.text = pmdl.getText('canvasOpt3');
+    ui.uiCanvasOpt4.text = pmdl.getText('canvasOpt4');
     win.syncPresetPresentation();
 
     // Finally tab.
-    ui.uibackgroundActionLast.selection = mdl.getOptionIndex('backgroundActionLast');
+    ui.uibackgroundActionLast.selection = pmdl.getOptionIndex('backgroundActionLast');
     
     // "Where to save" box.
     win.syncPresetSaveBehaviour();
     ui.uiSubfolderOption.selection =
-        mdl.getOptionIndex('subFolderOption');
+        pmdl.getOptionIndex('subFolderOption');
 
     // Bottom controls.
     ui.uiDelBtn.enabled = isDeletePresetAllowed;
@@ -2541,7 +2650,7 @@ function showUiPreset (mdl, isDeletePresetAllowed) {
     if (1==ret) {
         
         // Finalise preset changes.
-        mdl.preSaveCheck();
+        pmdl.preSaveCheck();
     };
 
     return ret
@@ -2602,13 +2711,6 @@ function addControlsToObject (control, object) {
 // ================================================================================
 // Misc Functions
 // ================================================================================
-
-function isSupportedInThisVersion () {
-    // Determines if this script is expected to work under this version of Photoshop.
-    // Modify as other versions are tested.
-    //
-    return (getVersion() >= 8);
-};
 
 function getVersion() {
     // Return the version of Photoshop;
@@ -2937,7 +3039,8 @@ try {
     psTool = new PhotoshopTool ();
 
     //  Option objects.
-    pstOpts = new PresetOptions (psTool);
+    mnOpts = new MainOptions ();
+    pstOpts = new PresetOptions ();
 
     // Save current user preferences.
     psTool.saveSettings();
@@ -2945,19 +3048,15 @@ try {
     //record original ruler preference before doing anything
     var startRulerUnits = app.preferences.rulerUnits
 
-    if (!isSupportedInThisVersion()) {
-        if (!confirm ("It is not known if this script will work with this version of Photoshop, are you sure you want to continue?", true, "Not tested for this version of Photoshop."))
-            throw "Script cancelled."
-    };
-
     var settings = new Settings();
     var runOptions = new Object();
 
     settings.getConfiguration();
-    var usrValue = showUiMain(runOptions, settings);
+    var mainWinEditModel = new MainEditModel(mnOpts, runOptions, settings);
+    var uiMainResult = showUiMain(mainWinEditModel);
     settings.putConfiguration(); // Have to save changes after Done.
     
-    if (1 !=usrValue)
+    if (1 != uiMainResult)
         throw "Script cancelled."; // Done button exits here.
 
     // Save settings.
@@ -3023,7 +3122,7 @@ try {
                 throw "Script cancelled.";
 
         // Process the image
-         psTool.setDefaultSettings();
+        psTool.setDefaultSettings();
         try {
             activeDocumentHandler.saveSmallJPEG(imageFile, runOptions.imageParameters);
         }
@@ -3049,7 +3148,7 @@ try {
          var namingSubFn = function (imageFile, prefix, suffix) {
             var tmp = unescape(imageFile.name).replace(/ /g,"-");
             var saveFile = new File(runOptions.saveFolder)
-            saveFile.changePath('./' + prefix + tmp.substr(0,tmp.lastIndexOf('.')) + suffix + '.jpg');
+            saveFile.changePath(prefix + tmp.substr(0,tmp.lastIndexOf('.')) + suffix + '.jpg');
             return saveFile;
          };
   
