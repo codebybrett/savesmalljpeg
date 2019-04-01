@@ -63,7 +63,7 @@ bringToFront();
         // Used with getCustomOptions
         // var scriptUUID = "c1025640-4ccf-11dd-ae16-0800200c9a66"
 
-var scriptVersion = '1.43';
+var scriptVersion = '1.5';
 
 // Using a file to store data between sessions - hopefully will work with older versions.
 var configDataFile = new File (app.preferencesFolder)
@@ -255,10 +255,9 @@ function PhotoshopTool () {
 
         var jpegQuality, optimumQuality;
         
-        // If null maxKb just save as maximum quality.
+        // Check parameter.
         if (! maxKb) {
-            this.saveForWebAsJPEG(saveFile, 100);
-            return 100;
+            throw "Internal error - maxKb must not be null.";
         }
 
         // Reduce quality relatively quickly until under limit.
@@ -451,10 +450,11 @@ function Settings () {
                 <colourProfileName>sRGB IEC61966-2.1</colourProfileName>\
                 <maxWidthPx>1920</maxWidthPx>\
                 <maxHeightPx>1200</maxHeightPx>\
-                <maxFilesizeKb>2000</maxFilesizeKb>\
                 <smallImageCheck>warn</smallImageCheck>\
                 <presetNotes></presetNotes>\
                 <inputOption>currentImage</inputOption>\
+                <saveQualityOption>maxFilesize</saveQualityOption>\
+                <saveQualityValue>2000</saveQualityValue>\
                 <reductionMethodOption>bicubicSharper</reductionMethodOption>\
                 <namingBehaviour>original</namingBehaviour>\
                 <imageRotationOptions>none</imageRotationOptions>\
@@ -531,7 +531,14 @@ function Settings () {
             preset.colourProfileName = this.loadXmlElt(presetXML, "colourProfileName");
             preset.maxWidthPx = this.loadXmlElt(presetXML, "maxWidthPx");
             preset.maxHeightPx = this.loadXmlElt(presetXML, "maxHeightPx");
-            preset.maxFilesizeKb = this.loadXmlElt(presetXML, "maxFilesizeKb");
+
+            if (data.scriptVersion < "1.50") {
+                preset.maxFilesizeKb = this.loadXmlElt(presetXML, "maxFilesizeKb");
+            } else {
+                preset.saveQualityOption = this.loadXmlElt(presetXML, "saveQualityOption");
+                preset.saveQualityValue = this.loadXmlElt(presetXML, "saveQualityValue");
+            }
+
             preset.smallImageCheck = this.loadXmlElt(presetXML, "smallImageCheck");
             preset.presetNotes = this.loadXmlElt(presetXML, "presetNotes","");
             preset.inputOption = this.loadXmlElt(presetXML, "inputOption", "currentImage");
@@ -672,6 +679,21 @@ function Settings () {
             };
         };
    
+        // 1.50: Upgrade earlier setting files.
+        if (data.scriptVersion < "1.50") {
+            for (var i=0; i < data.preset.length; i++) {
+                var preset = data.preset[i];
+                // Convert maxfilesizeKb to quality option choice and value.
+                if (preset.maxFilesizeKb = "") {
+                    preset.saveQualityOption = "maxQuality";
+                    preset.saveQualityValue = "";
+                } else {
+                    preset.saveQualityOption = "maxFilesize";
+                    preset.saveQualityValue = preset.maxFilesizeKb;
+                };
+            };
+        };
+   
         return data;
     };
     
@@ -721,6 +743,8 @@ function Settings () {
     };
 
     this.putConfiguration = function () {
+
+        return;
 
         // Save configuration settings for next run.
         try {
@@ -882,6 +906,23 @@ function PresetOptions () {
         {
             name: 'allImagesInFolder',
             text: 'Process all images in a folder'
+        }
+    ];
+
+    // --------------------------------------------------------------------------------
+
+    this.SaveQualityOptions = [
+        {
+            name: 'maxQuality',
+            text: 'Max quality'
+        },
+        {
+            name: 'jpegQuality',
+            text: 'Jpeg quality (0 - 100)'
+        },
+        {
+            name: 'maxFilesize',
+            text: 'Max filesize (Kb)'
         }
     ];
 
@@ -1163,10 +1204,14 @@ function MainEditModel (mainOpts, runOptions, settings) {
 
         var txt = preset.maxWidthPx + "x" + preset.maxHeightPx + " pixels " 
             + "8bit \'" + preset.colourProfileName + "\'";
-        if (preset.maxFilesizeKb != "")
-            txt = txt + " (" + preset.maxFilesizeKb + "Kb max.)"
-        else
-            txt = txt + " (maximum quality)";
+        switch (preset.subFolderOption) {
+            case "maxQuality":
+                txt = txt + " (maximum quality)";
+            case "jpegQuality":
+                txt = txt + " (" + preset.subFolderValue + "jpeg quality)";
+            case "maxFilesize":
+                txt = txt + " (" + preset.subFolderValue + "Kb max.)";
+        };
 
         return txt;
     };
@@ -1365,10 +1410,8 @@ function MainEditModel (mainOpts, runOptions, settings) {
         imgp.backgroundActionLastSet = preset.backgroundActionLastSet;
         imgp.backgroundActionLastName = preset.backgroundActionLastName;
         imgp.colourProfile = preset.colourProfileName.toString();
-        if (preset.maxFilesizeKb == "")
-            imgp.maxFilesizekb = null
-        else
-            imgp.maxFilesizekb = Number(preset.maxFilesizeKb);
+        imgp.saveQualityOption = preset.saveQualityOption;
+        imgp.saveQualityValue = Number(preset.saveQualityValue);
         imgp.smallImageWarning = (preset.smallImageCheck == "warn");
     };
 };
@@ -1400,6 +1443,7 @@ function PresetEditModel (presetOpts, preset) {
 
 
     this.assignOptions('inputOption', 'InputOptions');
+    this.assignOptions('saveQualityOption', 'SaveQualityOptions');
     this.assignOptions('imageRotationOptions', 'ImageRotationOptions');
     this.assignOptions('reductionMethodOption', 'ReductionMethodOptions');
     this.assignOptions('postResizeSharpening', 'PostResizeSharpeningOptions');
@@ -1587,12 +1631,31 @@ function PresetEditModel (presetOpts, preset) {
         );
     
         this.rules[this.rules.length] = new SimpleRule (
-            'maxFilesizeKb', 'Maximum filesize must be a whole number of kilobytes or blank.',
+            'saveQualityValue',
+            'Quality of 0 to 100 required for Jpeg Quality Setting.',
             function (val) {
-                return (
-                    (val.maxFilesizeKb == '')
-                    || (Number(val.maxFilesizeKb))
-                )
+                var isValidOption = (
+                    (val.saveQualityOption != 'jpegQuality')
+                    || (
+                        (0 <= Number(val.saveQualityValue))
+                        && (100 >= Number(val.saveQualityValue))
+                    )
+                );
+                return isValidOption;
+            }
+        );
+
+        this.rules[this.rules.length] = new SimpleRule (
+            'saveQualityValue',
+            'Maximum filesize must be a whole number of kilobytes.',
+            function (val) {
+                var isValidOption = (
+                    (val.saveQualityOption != 'maxFilesize')
+                    || (
+                        (0 < Number(val.saveQualityValue))
+                    )
+                );
+                return isValidOption;
             }
         );
 
@@ -1748,6 +1811,14 @@ function PresetEditModel (presetOpts, preset) {
 
     this.preSaveCheck = function () {
         // To run before save.
+
+        var saveQualityOption = this.getOptionValue('saveQualityOption');
+        switch (saveQualityOption) {
+            case 'maxQuality':
+                this.setText('saveQualityValue','');
+                break;
+        };
+
 
         var saveBehaviour = this.getOptionValue('saveBehaviour');
 
@@ -2184,12 +2255,11 @@ function showUiPreset (pmdl, isDeletePresetAllowed) {
                     orientation: 'row',\
                     alignChildren: 'fill',\
                     g0: Group {\
-                        size: [180,20],\
-                        alignChildren: ['right','center'],\
-                        statictext3:StaticText{text:'Max. filesize (Kb):' },\
-                        etMaxFilesizeKb:EditText{ properties: {name: 'uiMaxFilesizeKb'}, characters: 5, text:'' , helpTip: 'Repeatedly save the file at reducing quality until the file is less than or equal to this limit.'}\
+                        size: [300,20],\
+                        alignChildren: ['left','center'],\
+                        ddlSaveQualityOption:DropDownList{properties: {name: 'uiSaveQualityOption'}, helpTip: 'Choose the save quality.'},\
+                        etSaveQualityValue:EditText{ properties: {name: 'uiSaveQualityValue'}, characters: 5, text:'' , helpTip: 'Enter the quality value.'}\
                     },\
-                    statictext4:StaticText{text:'(blank = maximum quality)' },\
                     cbSmallImageWarning:Checkbox{\
                         properties: {name: 'uiSmallImageWarning'}, \
                         alignment: ['right','center'],\
@@ -2348,6 +2418,7 @@ function showUiPreset (pmdl, isDeletePresetAllowed) {
 
     // Load list boxes.
     populateListBox(ui.uiInputOption, 'inputOption');
+    populateListBox(ui.uiSaveQualityOption, 'saveQualityOption');
     populateListBox(ui.uiImageActionOne, 'imageActionOne');
     populateListBox(ui.uiplacementAction, 'placementAction');
     populateListBox(ui.uibackgroundActionLast, 'backgroundActionLast');
@@ -2406,6 +2477,17 @@ function showUiPreset (pmdl, isDeletePresetAllowed) {
         ui.uiInputOption.onChange = function () {
             pmdl.setInputOption(this.selection.index);
             win.syncPresetSaveBehaviour();
+            win.syncPresetValidation();
+        };
+
+        ui.uiSaveQualityOption.onChange = function () {
+            pmdl.setOptionIdx('saveQualityOption', this.selection.index);
+            win.syncSaveQualityValue();
+            win.syncPresetValidation();
+        };
+
+        ui.uiSaveQualityValue.onChanging = function () {
+            pmdl.setText('saveQualityValue', this.text);
             win.syncPresetValidation();
         };
 
@@ -2469,11 +2551,6 @@ function showUiPreset (pmdl, isDeletePresetAllowed) {
             win.syncPresetValidation();
         };
 
-        ui.uiMaxFilesizeKb.onChanging = function () {
-            pmdl.setText('maxFilesizeKb', this.text);
-            win.syncPresetValidation();
-        };
-
         ui.uiPresetNotes.onChanging = function () {
             pmdl.setText('presetNotes', this.text);
         };
@@ -2510,6 +2587,16 @@ function showUiPreset (pmdl, isDeletePresetAllowed) {
     // --------------------------------------------------------------------------------
     // Synchronisation methods
     // --------------------------------------------------------------------------------
+
+    win.syncSaveQualityValue = function () {
+
+        var isVisible = !pmdl.isOptionFieldValue(
+            'saveQualityOption',
+            'maxQuality'
+        );
+
+        ui.uiSaveQualityValue.visible = isVisible;
+    };
 
     win.syncPresetPostResizeSharpening = function () {
 
@@ -2594,7 +2681,10 @@ function showUiPreset (pmdl, isDeletePresetAllowed) {
     win.syncPresetValidation = function () {
 
         var currentImageOnly = (pmdl.isOptionFieldValue('inputOption', 'currentImage'));
-        ui.uiSaveRepeatWarning.visible = ((Number(ui.uiMaxFilesizeKb.text)) && (!currentImageOnly));
+        ui.uiSaveRepeatWarning.visible = (
+            (pmdl.isOptionFieldValue('saveQualityOption', 'maxFilesize'))
+            && (!currentImageOnly)
+        );
 
         pmdl.validate();
         var problems = pmdl.errors;
@@ -2621,9 +2711,11 @@ function showUiPreset (pmdl, isDeletePresetAllowed) {
     ui.uiColourProfile.text = pmdl.getText('colourProfileName');
     ui.uiMaxWidthPx.text = pmdl.getText('maxWidthPx');
     ui.uiMaxHeightPx.text = pmdl.getText('maxHeightPx');
-    ui.uiMaxFilesizeKb.text = pmdl.getText('maxFilesizeKb');
+    ui.uiSaveQualityOption.selection = pmdl.getOptionIndex('saveQualityOption');
+    ui.uiSaveQualityValue.text = pmdl.getText('saveQualityValue');
     ui.uiSmallImageWarning.value = pmdl.getBooleanOption('smallImageCheck', 'SmallImageWarningOptions');
     ui.uiPresetNotes.text = pmdl.getText('presetNotes');
+    win.syncSaveQualityValue();
 
     // Preparation tab.
     ui.uiImageActionOne.selection = pmdl.getOptionIndex('imageActionOne');
@@ -2799,6 +2891,7 @@ var activeDocumentHandler = new Object();
 
 activeDocumentHandler.compliesWithRequirements = function (param) {
     // Returns True if the current image satisfies the requirements.
+    // Note that can't tell the quality of an existing document, so assume not ok.
     var unModified = app.activeDocument.saved
     if (!unModified) return false;
     var extOk = hasJpgExtension(activeDocument.fullName);
@@ -2806,7 +2899,13 @@ activeDocumentHandler.compliesWithRequirements = function (param) {
     var heightOk = (activeDocument.height <= param.height);
     var depthOk = (activeDocument.bitsPerChannel == BitsPerChannelType.EIGHT);
     var profileOk = ((activeDocument.colorProfileType != ColorProfile.NONE) && (activeDocument.colorProfileName == param.colourProfile));
-    var fileSizeOk = (activeDocument.fullName.length <= (param.maxFilesizekb * 1024));
+    var fileSizeOk = (
+        (param.saveQualityOption = 'maxQuality')
+        || (
+            (param.saveQualityOption = 'maxFilesize')
+            && (activeDocument.fullName.length <= (param.saveQualityValue * 1024))
+        )
+    );
     return (unModified && extOk && widthOk && heightOk && depthOk && profileOk && fileSizeOk);
 };
 
@@ -3033,7 +3132,17 @@ activeDocumentHandler.saveSmallJPEG = function (imageFile, imageParameters) {
 
         // Save the new image and close it .
         try {
-            psTool.saveJPEGLimitFilesizeKb(imageFile, imageParameters.maxFilesizekb);
+            switch (runOptions.imageParameters.saveQualityOption) {
+                case "maxQuality":
+                    this.saveForWebAsJPEG(saveFile, 100);
+                    break;
+                case "jpegQuality":
+                    this.saveForWebAsJPEG(saveFile, imageParameters.saveQualityValue);
+                    break;
+                case "maxFilesize":
+                    psTool.saveJPEGLimitFilesizeKb(imageFile, imageParameters.saveQualityValue);
+                    break;
+            };
         }
         catch (e) {
             if (e != "Image exceeds maximum filesize.")
