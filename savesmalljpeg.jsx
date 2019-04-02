@@ -63,7 +63,7 @@ bringToFront();
         // Used with getCustomOptions
         // var scriptUUID = "c1025640-4ccf-11dd-ae16-0800200c9a66"
 
-var scriptVersion = '1.5';
+var scriptVersion = '1.50'; // Comparison operators operate on this so keep two decimal digits.
 
 // Using a file to store data between sessions - hopefully will work with older versions.
 var configDataFile = new File (app.preferencesFolder)
@@ -684,13 +684,14 @@ function Settings () {
             for (var i=0; i < data.preset.length; i++) {
                 var preset = data.preset[i];
                 // Convert maxfilesizeKb to quality option choice and value.
-                if (preset.maxFilesizeKb = "") {
-                    preset.saveQualityOption = "maxQuality";
-                    preset.saveQualityValue = "";
+                if (preset.maxFilesizeKb == "") {
+                    preset.saveQualityOption = "jpegQuality";
+                    preset.saveQualityValue = "100";
                 } else {
                     preset.saveQualityOption = "maxFilesize";
-                    preset.saveQualityValue = preset.maxFilesizeKb;
+                    preset.saveQualityValue = preset.maxFilesizeKb
                 };
+                delete preset.maxFilesizeKb;
             };
         };
    
@@ -743,8 +744,6 @@ function Settings () {
     };
 
     this.putConfiguration = function () {
-
-        return;
 
         // Save configuration settings for next run.
         try {
@@ -912,10 +911,6 @@ function PresetOptions () {
     // --------------------------------------------------------------------------------
 
     this.SaveQualityOptions = [
-        {
-            name: 'maxQuality',
-            text: 'Max quality'
-        },
         {
             name: 'jpegQuality',
             text: 'Jpeg quality (0 - 100)'
@@ -1204,13 +1199,13 @@ function MainEditModel (mainOpts, runOptions, settings) {
 
         var txt = preset.maxWidthPx + "x" + preset.maxHeightPx + " pixels " 
             + "8bit \'" + preset.colourProfileName + "\'";
-        switch (preset.subFolderOption) {
-            case "maxQuality":
-                txt = txt + " (maximum quality)";
+        switch (preset.saveQualityOption) {
             case "jpegQuality":
-                txt = txt + " (" + preset.subFolderValue + "jpeg quality)";
+                txt = txt + " (" + preset.saveQualityValue + "% quality)";
+                break;
             case "maxFilesize":
-                txt = txt + " (" + preset.subFolderValue + "Kb max.)";
+                txt = txt + " (" + preset.saveQualityValue + "Kb max.)";
+                break;
         };
 
         return txt;
@@ -1811,14 +1806,6 @@ function PresetEditModel (presetOpts, preset) {
 
     this.preSaveCheck = function () {
         // To run before save.
-
-        var saveQualityOption = this.getOptionValue('saveQualityOption');
-        switch (saveQualityOption) {
-            case 'maxQuality':
-                this.setText('saveQualityValue','');
-                break;
-        };
-
 
         var saveBehaviour = this.getOptionValue('saveBehaviour');
 
@@ -2482,7 +2469,6 @@ function showUiPreset (pmdl, isDeletePresetAllowed) {
 
         ui.uiSaveQualityOption.onChange = function () {
             pmdl.setOptionIdx('saveQualityOption', this.selection.index);
-            win.syncSaveQualityValue();
             win.syncPresetValidation();
         };
 
@@ -2587,16 +2573,6 @@ function showUiPreset (pmdl, isDeletePresetAllowed) {
     // --------------------------------------------------------------------------------
     // Synchronisation methods
     // --------------------------------------------------------------------------------
-
-    win.syncSaveQualityValue = function () {
-
-        var isVisible = !pmdl.isOptionFieldValue(
-            'saveQualityOption',
-            'maxQuality'
-        );
-
-        ui.uiSaveQualityValue.visible = isVisible;
-    };
 
     win.syncPresetPostResizeSharpening = function () {
 
@@ -2715,7 +2691,6 @@ function showUiPreset (pmdl, isDeletePresetAllowed) {
     ui.uiSaveQualityValue.text = pmdl.getText('saveQualityValue');
     ui.uiSmallImageWarning.value = pmdl.getBooleanOption('smallImageCheck', 'SmallImageWarningOptions');
     ui.uiPresetNotes.text = pmdl.getText('presetNotes');
-    win.syncSaveQualityValue();
 
     // Preparation tab.
     ui.uiImageActionOne.selection = pmdl.getOptionIndex('imageActionOne');
@@ -2900,7 +2875,10 @@ activeDocumentHandler.compliesWithRequirements = function (param) {
     var depthOk = (activeDocument.bitsPerChannel == BitsPerChannelType.EIGHT);
     var profileOk = ((activeDocument.colorProfileType != ColorProfile.NONE) && (activeDocument.colorProfileName == param.colourProfile));
     var fileSizeOk = (
-        (param.saveQualityOption = 'maxQuality')
+        (
+            (param.saveQualityOption = 'jpegQuality')
+            && (param.saveQualityValue = '100')
+        )
         || (
             (param.saveQualityOption = 'maxFilesize')
             && (activeDocument.fullName.length <= (param.saveQualityValue * 1024))
@@ -3133,9 +3111,6 @@ activeDocumentHandler.saveSmallJPEG = function (imageFile, imageParameters) {
         // Save the new image and close it .
         try {
             switch (runOptions.imageParameters.saveQualityOption) {
-                case "maxQuality":
-                    this.saveForWebAsJPEG(saveFile, 100);
-                    break;
                 case "jpegQuality":
                     this.saveForWebAsJPEG(saveFile, imageParameters.saveQualityValue);
                     break;
