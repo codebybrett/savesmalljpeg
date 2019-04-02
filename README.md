@@ -10,6 +10,8 @@ Now that lightroom is here, many will have no need for this script because they 
 
 But if you're a Photoshop user who just wants an easy regularly used way to export PSDs or other images to Jpeg this script has value.
 
+The script also provides support for adding white filler bars to meet Instagram's varible heigh range limits.
+
 See the [Documentation](https://codebybrett.github.io/savesmalljpeg/)
 
 ## Contribution and issues
