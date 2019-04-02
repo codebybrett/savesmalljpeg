@@ -1006,6 +1006,14 @@ function PresetOptions () {
         {
             name:'const-smalljpeg',
             text: 'smalljpeg'
+        },
+        {
+            name:'const-ig',
+            text: 'instagram'
+        },
+        {
+            name:'const-fb',
+            text: 'facebook'
         }
     ];
    
@@ -1094,19 +1102,23 @@ function PresetOptions () {
     this.PlaceOnCanvasBehaviourOptions = [
         {
             name: 'none',
-            text: 'No borders, crop to resized image'
+            text: 'Crop to resized image'
         },
         {
             name: 'borders-min',
-            text: 'Image contained within borders'
+            text: 'Image contained within margins'
         },
         {
             name: 'scale-and-offset',
-            text: 'Image contained within percentage of available area with +/- pixel offset'
+            text: 'Image contained within percentage of canvas area with +/- pixel offset'
         },
         {
             name: 'extend-maximum',
-            text: 'Image with possibly vertical or horizontal background bars showing'
+            text: 'Fixed canvas size'
+        },
+        {
+            name: 'limit-height', // Added in version 1.50.
+            text: 'Limit to height range (e.g for Instagram)'
         }
     ];
 
@@ -1197,7 +1209,10 @@ function MainEditModel (mainOpts, runOptions, settings) {
     this.getPresetSummary = function (idx) {
         var preset = this.mvlu.preset[idx];
 
-        var txt = preset.maxWidthPx + "x" + preset.maxHeightPx + " pixels " 
+        var txt = preset.maxWidthPx + " x ";
+        if (preset.placeOnCanvasBehaviour == "limit-height")
+            txt = txt + preset.canvasOpt1 + "-";
+        txt = txt + preset.maxHeightPx + " pixels " 
             + "8bit \'" + preset.colourProfileName + "\'";
         switch (preset.saveQualityOption) {
             case "jpegQuality":
@@ -1287,6 +1302,8 @@ function MainEditModel (mainOpts, runOptions, settings) {
             case "const-jpg":
             case "const-prints":
             case "const-thumbs":
+            case "const-ig":
+            case "const-fb":
             case "const-smalljpeg":
                 var idx = pstOpts.getOptionIndxFor(preset.subFolderOption,'SubfolderOptions');
                 subfolderTxt = pstOpts.SubfolderOptions[idx].text;
@@ -1771,6 +1788,18 @@ function PresetEditModel (presetOpts, preset) {
                 return isValidOption;
             }
         );                    
+
+        this.rules[this.rules.length] = new SimpleRule (
+            'canvasOpt1',
+            'Minimum height must be a non-zero positive number.',
+            function (val) {
+                var isValidOption = (
+                    (val.placeOnCanvasBehaviour != 'limit-height')
+                    || (1 <= Number(val.canvasOpt1))
+                );
+                return isValidOption;
+            }
+        );
     };
 
     this.brokenRules = function () {
@@ -1833,13 +1862,13 @@ function PresetEditModel (presetOpts, preset) {
         // Clearing now instead of earlier provides memory effect.
         var placeOnCanvasBehaviour = this.getOptionValue('placeOnCanvasBehaviour');
 
-        if (
-            (placeOnCanvasBehaviour == 'none')
-            || (placeOnCanvasBehaviour == 'extend-maximum')
-        ){
-            this.setText('canvasOpt1', '');
-            this.setText('canvasOpt2', '');
-            this.setText('canvasOpt3', '');
+        switch (placeOnCanvasBehaviour) {
+            case 'none':
+            case 'extend-maximum':
+                this.setText('canvasOpt1', '');
+            case 'limit-height':
+                this.setText('canvasOpt2', '');
+                this.setText('canvasOpt3', '');
         };
 
         if (placeOnCanvasBehaviour != 'borders-min') {
@@ -2217,35 +2246,18 @@ function showUiPreset (pmdl, isDeletePresetAllowed) {
                 alignChildren: 'fill',\
                 margins: 15,\
                 ddlInputOption:DropDownList{properties: {name: 'uiInputOption'}, helpTip: 'Choose which images are processed.'},\
-                g0: Group { \
-                     orientation: 'row',\
-                    alignChildren: 'fill',\
-                    g0: Group {\
-                        size: [180,25],\
-                        alignChildren: ['right','center'],\
-                        statictext1:StaticText{text:'Max. width (pixels):'},\
-                        etMaxWidthPx:EditText{ properties: {name: 'uiMaxWidthPx'}, characters: 5, text:'1024' , helpTip: 'The image will be scaled to fit within this limit.'}\
-                    },\
-                    g1: Group {\
-                        size: [180,25],\
-                        alignChildren: ['right','center'],\
-                        statictext2:StaticText{text:'Max. height (pixels):' },\
-                        etMaxHeightPx:EditText{ properties: {name: 'uiMaxHeightPx'}, characters: 5, text:'768' , helpTip: 'The image will be scaled to fit within this limit.'}\
-                    },\
-                    g2: Group {\
-                        alignChildren: ['right','center'],\
-                        stProfile:StaticText{text:'Profile:' },\
-                        etProfile:EditText{ properties: {name: 'uiColourProfile', readonly:true}, characters: 25, text:'sRGB IEC61966-2.1' , helpTip: 'ICC Colour space to convert to.'}\
-                    }\
-                },\
                 g1: Group { \
                     orientation: 'row',\
                     alignChildren: 'fill',\
                     g0: Group {\
-                        size: [300,20],\
                         alignChildren: ['left','center'],\
                         ddlSaveQualityOption:DropDownList{properties: {name: 'uiSaveQualityOption'}, helpTip: 'Choose the save quality.'},\
-                        etSaveQualityValue:EditText{ properties: {name: 'uiSaveQualityValue'}, characters: 5, text:'' , helpTip: 'Enter the quality value.'}\
+                        etSaveQualityValue:EditText{ properties: {name: 'uiSaveQualityValue'}, characters: 5, text:'' , helpTip: 'Enter the quality value.'},\
+                        g2: Group {\
+                            alignChildren: ['right','center'],\
+                            stProfile:StaticText{text:'Profile:' },\
+                            etProfile:EditText{ properties: {name: 'uiColourProfile', readonly:true}, characters: 25, text:'sRGB IEC61966-2.1' , helpTip: 'ICC Colour space to convert to.'}\
+                        }\
                     },\
                     cbSmallImageWarning:Checkbox{\
                         properties: {name: 'uiSmallImageWarning'}, \
@@ -2254,7 +2266,23 @@ function showUiPreset (pmdl, isDeletePresetAllowed) {
                         helpTip: 'Warns you if your image is smaller than both the maximum height and maximum width.'\
                     }\
                 },\
-                g1: Group {\
+                g0: Group { \
+                    orientation: 'row',\
+                   alignChildren: 'fill',\
+                   g0: Group {\
+                       size: [180,25],\
+                       alignChildren: ['left','center'],\
+                       statictext1:StaticText{text:'Max. width (pixels):'},\
+                       etMaxWidthPx:EditText{ properties: {name: 'uiMaxWidthPx'}, characters: 5, text:'1024' , helpTip: 'The image will be scaled to fit within this limit.'}\
+                   },\
+                   g1: Group {\
+                       size: [180,25],\
+                       alignChildren: ['left','center'],\
+                       statictext2:StaticText{text:'Max. height (pixels):' },\
+                       etMaxHeightPx:EditText{ properties: {name: 'uiMaxHeightPx'}, characters: 5, text:'768' , helpTip: 'The image will be scaled to fit within this limit.'}\
+                   }\
+               },\
+               g1: Group {\
                     orientation: 'row',\
                     alignChildren: 'fill',\
                     statictext1:StaticText{ text:'Note:' },\
@@ -2306,7 +2334,7 @@ function showUiPreset (pmdl, isDeletePresetAllowed) {
                         ddlBackgroundOptions:DropDownList{properties: {name: 'uiBackgroundOptions'}, helpTip: 'Background options.'},\
                         g0: Group {\
                             alignChildren: ['right','center'],\
-                            statictext1:StaticText{ properties: {name: 'uiCanvasOpt1Txt'}, justify: 'right', text:'<size>' },\
+                            statictext1:StaticText{ properties: {name: 'uiCanvasOpt1Txt'}, size: [80, 20], justify: 'right', text:'<size>' },\
                             etCanvasOpt1:EditText{ properties: {name: 'uiCanvasOpt1'}, characters: 5, text:''}\
                         },\
                         g1: Group {\
@@ -2602,9 +2630,14 @@ function showUiPreset (pmdl, isDeletePresetAllowed) {
             'scale-and-offset'
         );
 
+        var isLimitHeight = pmdl.isOptionFieldValue(
+            'placeOnCanvasBehaviour',
+            'limit-height'
+        );
+
         ui.uiBackgroundOptions.visible = (!isNoBehaviour);
 
-        ui.uiCanvasOpt1.visible = (isBordersMin || isScaleAndOffset);
+        ui.uiCanvasOpt1.visible = (isBordersMin || isScaleAndOffset || isLimitHeight);
         ui.uiCanvasOpt1Txt.visible = ui.uiCanvasOpt1.visible
 
         ui.uiCanvasOpt2.visible = (isBordersMin || isScaleAndOffset);
@@ -2627,6 +2660,10 @@ function showUiPreset (pmdl, isDeletePresetAllowed) {
             ui.uiCanvasOpt1Txt.text = "Scale%";
             ui.uiCanvasOpt2Txt.text = "x-shift";
             ui.uiCanvasOpt3Txt.text = "y-shift";
+        };
+
+        if (isLimitHeight) {
+            ui.uiCanvasOpt1Txt.text = "Min height (px)";
         };
     };
 
@@ -2931,7 +2968,7 @@ activeDocumentHandler.reduceToFit = function (maxWidth, maxHeight, reductionMeth
 // --------------------------------------------------------------------------------
 
 activeDocumentHandler.makeCompliantImage = function (param) {
-    // Creates a flat duplicate of the current document that is 8bit, 1024x768 and sRGB.
+    // Creates a flat duplicate of the current document.
     //
     
     var reductionMethod;
@@ -3029,9 +3066,22 @@ activeDocumentHandler.makeCompliantImage = function (param) {
             default:
         };
     
+        // Size the canvas and place the image.
         switch (param.placeOnCanvasBehaviour) {
             case 'extend-maximum':
-                activeDocument.resizeCanvas(param.width,param.height);
+                activeDocument.resizeCanvas(param.width, param.height);
+                break;
+            case 'limit-height':
+                var minHeight = new UnitValue( (param.canvasOpt1 =="" ? "1" : param.canvasOpt1) + " pixels" );
+                if (activeDocument.height < minHeight) {
+                    activeDocument.resizeCanvas(param.width, minHeight);
+                } else {
+                    if (activeDocument.height < param.height) {
+                        activeDocument.resizeCanvas(param.width, activeDocument.height);
+                    } else {
+                        activeDocument.resizeCanvas(param.width, param.height);
+                    }
+                }
                 break;
             case 'borders-min':
                 var imageLayer = activeDocument.activeLayer.duplicate();
@@ -3112,7 +3162,7 @@ activeDocumentHandler.saveSmallJPEG = function (imageFile, imageParameters) {
         try {
             switch (runOptions.imageParameters.saveQualityOption) {
                 case "jpegQuality":
-                    this.saveForWebAsJPEG(saveFile, imageParameters.saveQualityValue);
+                    psTool.saveForWebAsJPEG(saveFile, imageParameters.saveQualityValue);
                     break;
                 case "maxFilesize":
                     psTool.saveJPEGLimitFilesizeKb(imageFile, imageParameters.saveQualityValue);
