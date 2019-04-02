@@ -34,6 +34,7 @@ The preset settings window:
 * Optional rotation, scaling and border options.
 * Optional Bruce Fraser sharpening for digital display.
 * Preset file is a simplified XML file that could be distributed.
+* Support for producing Instagram images by adding filler borders.
 * Simple user interface.
 
 ## Where to download
