@@ -63,7 +63,7 @@ bringToFront();
         // Used with getCustomOptions
         // var scriptUUID = "c1025640-4ccf-11dd-ae16-0800200c9a66"
 
-var scriptVersion = '1.51'; // Comparison operators operate on this so keep two decimal digits.
+var scriptVersion = '1.52'; // Comparison operators operate on this so keep two decimal digits.
 
 // Using a file to store data between sessions - hopefully will work with older versions.
 var configDataFile = new File (app.preferencesFolder)
@@ -1346,7 +1346,7 @@ function MainEditModel (mainOpts, runOptions, settings) {
 
     this.isReadyToRun = function () {
         var preset = this.getCurrentPreset();
-        var currentImageOnly = (this.inputOption == "currentImage");
+        var currentImageOnly = (preset.inputOption == "currentImage");
         var isReady = false;
         if ('ask' == preset.saveBehaviour)
             // Need a document open.
@@ -3162,7 +3162,7 @@ activeDocumentHandler.saveSmallJPEG = function (imageFile, imageParameters) {
         try {
             switch (runOptions.imageParameters.saveQualityOption) {
                 case "jpegQuality":
-                    psTool.saveForWebAsJPEG(saveFile, imageParameters.saveQualityValue);
+                    psTool.saveForWebAsJPEG(imageFile, imageParameters.saveQualityValue);
                     break;
                 case "maxFilesize":
                     psTool.saveJPEGLimitFilesizeKb(imageFile, imageParameters.saveQualityValue);
