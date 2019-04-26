@@ -63,7 +63,7 @@ bringToFront();
         // Used with getCustomOptions
         // var scriptUUID = "c1025640-4ccf-11dd-ae16-0800200c9a66"
 
-var scriptVersion = '1.52'; // Comparison operators operate on this so keep two decimal digits.
+var scriptVersion = '1.53'; // String comparison operators operate on this so keep two decimal digits.
 
 // Using a file to store data between sessions - hopefully will work with older versions.
 var configDataFile = new File (app.preferencesFolder)
@@ -257,7 +257,7 @@ function PhotoshopTool () {
         
         // Check parameter.
         if (! maxKb) {
-            throw "Internal error - maxKb must not be null.";
+            throw "Maximum filesize must be specified.";
         }
 
         // Reduce quality relatively quickly until under limit.
@@ -684,7 +684,8 @@ function Settings () {
             for (var i=0; i < data.preset.length; i++) {
                 var preset = data.preset[i];
                 // Convert maxfilesizeKb to quality option choice and value.
-                if (preset.maxFilesizeKb == "") {
+                if ( (! preset.maxFilesizeKb)
+                    || (preset.maxFilesizeKb == "")) {
                     preset.saveQualityOption = "jpegQuality";
                     preset.saveQualityValue = "100";
                 } else {
