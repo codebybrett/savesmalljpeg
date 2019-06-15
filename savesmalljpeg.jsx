@@ -2923,6 +2923,7 @@ activeDocumentHandler.compliesWithRequirements = function (param) {
     var heightOk = (activeDocument.height <= param.height);
     var depthOk = (activeDocument.bitsPerChannel == BitsPerChannelType.EIGHT);
     var profileOk = ((activeDocument.colorProfileType != ColorProfile.NONE) && (activeDocument.colorProfileName == param.colourProfile));
+    var noRotation = (param.imageRotationOptions != "none")
     var fileSizeOk = (
         (
             (param.saveQualityOption = 'jpegQuality')
@@ -2933,7 +2934,8 @@ activeDocumentHandler.compliesWithRequirements = function (param) {
             && (activeDocument.fullName.length <= (param.saveQualityValue * 1024))
         )
     );
-    return (unModified && extOk && widthOk && heightOk && depthOk && profileOk && fileSizeOk);
+    var itComplies = (unModified && extOk && widthOk && heightOk && depthOk && profileOk && fileSizeOk && noRotation);
+    return itComplies;
 };
 
 // --------------------------------------------------------------------------------
@@ -3011,6 +3013,7 @@ activeDocumentHandler.makeCompliantImage = function (param) {
     };
     
     // Rotation before resize so that resize is accurate.
+    // Cannot determine if image already complies with requirements if this option is used - see compliesWithRequirements
     if (param.imageRotationOptions == 'best-fit') {
         this.rotateForBestFit(param.width, param.height);
     };
