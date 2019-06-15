@@ -1113,22 +1113,27 @@ function PresetOptions () {
 
     this.PlaceOnCanvasBehaviourOptions = [
         {
+            // In this mode we can just copy the image if it meets requirements.
             name: 'none',
             text: 'Crop to resized image'
         },
         {
+            // In this mode we must create a new image.
             name: 'borders-min',
             text: 'Image contained within margins'
         },
         {
+            // In this mode we must create a new image.
             name: 'scale-and-offset',
             text: 'Image contained within percentage of canvas area with +/- pixel offset'
         },
         {
+            // In this mode we can just copy the image if it meets requirements.
             name: 'fixed-canvas',
             text: 'Fixed canvas size'
         },
         {
+            // In this mode we can just copy the image if it meets requirements.
             name: 'limit-height', // Added in version 1.50.
             text: 'Limit to height range (e.g for Instagram)'
         }
@@ -2915,15 +2920,41 @@ var activeDocumentHandler = new Object();
 
 activeDocumentHandler.compliesWithRequirements = function (param) {
     // Returns True if the current image satisfies the requirements.
-    // Note that can't tell the quality of an existing document, so assume not ok.
+
     var unModified = app.activeDocument.saved
     if (!unModified) return false;
+
+    var placeMode = param.PlaceOnCanvasBehaviourOptions;
+
+    // We must create a new image with these modes.
+    if (
+        (placeMode == "borders-min")
+        || (placeMode == "scale-and-offset")
+    ) return false;
+
     var extOk = hasJpgExtension(activeDocument.fullName);
-    var widthOk = (activeDocument.width <= param.width);
-    var heightOk = (activeDocument.height <= param.height);
+
+    var widthOk = false;
+    var heightOk = false;
+    if (placeMode == "fixed-canvas") {
+        widthOk = (activeDocument.width == param.width);
+        heightOk = (activeDocument.height == param.height);
+    } else {
+        widthOk = (activeDocument.width <= param.width);
+        heightOk = (activeDocument.height <= param.height);
+    }
+
+    if (placeMode == "limit-height") {
+        var minHeight = new UnitValue( (param.canvasOpt1 =="" ? "1" : param.canvasOpt1) + " pixels" );
+        heightOk = (heightOk && (activeDocument.height >= minHeight))
+    }
+
     var depthOk = (activeDocument.bitsPerChannel == BitsPerChannelType.EIGHT);
+
     var profileOk = ((activeDocument.colorProfileType != ColorProfile.NONE) && (activeDocument.colorProfileName == param.colourProfile));
+
     var noRotation = (param.imageRotationOptions != "none")
+
     var fileSizeOk = (
         (
             (param.saveQualityOption = 'jpegQuality')
@@ -2934,7 +2965,9 @@ activeDocumentHandler.compliesWithRequirements = function (param) {
             && (activeDocument.fullName.length <= (param.saveQualityValue * 1024))
         )
     );
+
     var itComplies = (unModified && extOk && widthOk && heightOk && depthOk && profileOk && fileSizeOk && noRotation);
+
     return itComplies;
 };
 
