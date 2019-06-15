@@ -696,6 +696,17 @@ function Settings () {
             };
         };
    
+        // 1.54: Upgrade earlier setting files.
+        if (data.scriptVersion < "1.54") {
+            for (var i=0; i < data.preset.length; i++) {
+                var preset = data.preset[i];
+                // Change internal code to avoid confusion.
+                if (preset.placeOnCanvasBehaviour == "extend-maximum") {
+                    preset.placeOnCanvasBehaviour = "fixed-canvas";
+                };
+            };
+        };
+   
         return data;
     };
     
@@ -1114,7 +1125,7 @@ function PresetOptions () {
             text: 'Image contained within percentage of canvas area with +/- pixel offset'
         },
         {
-            name: 'extend-maximum',
+            name: 'fixed-canvas',
             text: 'Fixed canvas size'
         },
         {
@@ -1865,7 +1876,7 @@ function PresetEditModel (presetOpts, preset) {
 
         switch (placeOnCanvasBehaviour) {
             case 'none':
-            case 'extend-maximum':
+            case 'fixed-canvas':
                 this.setText('canvasOpt1', '');
             case 'limit-height':
                 this.setText('canvasOpt2', '');
@@ -3069,7 +3080,7 @@ activeDocumentHandler.makeCompliantImage = function (param) {
     
         // Size the canvas and place the image.
         switch (param.placeOnCanvasBehaviour) {
-            case 'extend-maximum':
+            case 'fixed-canvas':
                 activeDocument.resizeCanvas(param.width, param.height);
                 break;
             case 'limit-height':
