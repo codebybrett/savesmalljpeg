@@ -63,7 +63,7 @@ bringToFront();
         // Used with getCustomOptions
         // var scriptUUID = "c1025640-4ccf-11dd-ae16-0800200c9a66"
 
-var scriptVersion = '1.53'; // String comparison operators operate on this so keep two decimal digits.
+var scriptVersion = '1.54'; // String comparison operators operate on this so keep two decimal digits.
 
 // Using a file to store data between sessions - hopefully will work with older versions.
 var configDataFile = new File (app.preferencesFolder)
@@ -696,6 +696,17 @@ function Settings () {
             };
         };
    
+        // 1.54: Upgrade earlier setting files.
+        if (data.scriptVersion < "1.54") {
+            for (var i=0; i < data.preset.length; i++) {
+                var preset = data.preset[i];
+                // Change internal code to avoid confusion.
+                if (preset.placeOnCanvasBehaviour == "extend-maximum") {
+                    preset.placeOnCanvasBehaviour = "fixed-canvas";
+                };
+            };
+        };
+   
         return data;
     };
     
@@ -1102,22 +1113,27 @@ function PresetOptions () {
 
     this.PlaceOnCanvasBehaviourOptions = [
         {
+            // In this mode we can just copy the image if it meets requirements.
             name: 'none',
             text: 'Crop to resized image'
         },
         {
+            // In this mode we must create a new image.
             name: 'borders-min',
             text: 'Image contained within margins'
         },
         {
+            // In this mode we must create a new image.
             name: 'scale-and-offset',
             text: 'Image contained within percentage of canvas area with +/- pixel offset'
         },
         {
-            name: 'extend-maximum',
+            // In this mode we can just copy the image if it meets requirements.
+            name: 'fixed-canvas',
             text: 'Fixed canvas size'
         },
         {
+            // In this mode we can just copy the image if it meets requirements.
             name: 'limit-height', // Added in version 1.50.
             text: 'Limit to height range (e.g for Instagram)'
         }
@@ -1865,7 +1881,7 @@ function PresetEditModel (presetOpts, preset) {
 
         switch (placeOnCanvasBehaviour) {
             case 'none':
-            case 'extend-maximum':
+            case 'fixed-canvas':
                 this.setText('canvasOpt1', '');
             case 'limit-height':
                 this.setText('canvasOpt2', '');
@@ -2904,14 +2920,41 @@ var activeDocumentHandler = new Object();
 
 activeDocumentHandler.compliesWithRequirements = function (param) {
     // Returns True if the current image satisfies the requirements.
-    // Note that can't tell the quality of an existing document, so assume not ok.
+
     var unModified = app.activeDocument.saved
     if (!unModified) return false;
+
+    var placeMode = param.PlaceOnCanvasBehaviourOptions;
+
+    // We must create a new image with these modes.
+    if (
+        (placeMode == "borders-min")
+        || (placeMode == "scale-and-offset")
+    ) return false;
+
     var extOk = hasJpgExtension(activeDocument.fullName);
-    var widthOk = (activeDocument.width <= param.width);
-    var heightOk = (activeDocument.height <= param.height);
+
+    var widthOk = false;
+    var heightOk = false;
+    if (placeMode == "fixed-canvas") {
+        widthOk = (activeDocument.width == param.width);
+        heightOk = (activeDocument.height == param.height);
+    } else {
+        widthOk = (activeDocument.width <= param.width);
+        heightOk = (activeDocument.height <= param.height);
+    }
+
+    if (placeMode == "limit-height") {
+        var minHeight = new UnitValue( (param.canvasOpt1 =="" ? "1" : param.canvasOpt1) + " pixels" );
+        heightOk = (heightOk && (activeDocument.height >= minHeight))
+    }
+
     var depthOk = (activeDocument.bitsPerChannel == BitsPerChannelType.EIGHT);
+
     var profileOk = ((activeDocument.colorProfileType != ColorProfile.NONE) && (activeDocument.colorProfileName == param.colourProfile));
+
+    var noRotation = (param.imageRotationOptions != "none")
+
     var fileSizeOk = (
         (
             (param.saveQualityOption = 'jpegQuality')
@@ -2922,7 +2965,10 @@ activeDocumentHandler.compliesWithRequirements = function (param) {
             && (activeDocument.fullName.length <= (param.saveQualityValue * 1024))
         )
     );
-    return (unModified && extOk && widthOk && heightOk && depthOk && profileOk && fileSizeOk);
+
+    var itComplies = (unModified && extOk && widthOk && heightOk && depthOk && profileOk && fileSizeOk && noRotation);
+
+    return itComplies;
 };
 
 // --------------------------------------------------------------------------------
@@ -3000,6 +3046,7 @@ activeDocumentHandler.makeCompliantImage = function (param) {
     };
     
     // Rotation before resize so that resize is accurate.
+    // Cannot determine if image already complies with requirements if this option is used - see compliesWithRequirements
     if (param.imageRotationOptions == 'best-fit') {
         this.rotateForBestFit(param.width, param.height);
     };
@@ -3069,7 +3116,7 @@ activeDocumentHandler.makeCompliantImage = function (param) {
     
         // Size the canvas and place the image.
         switch (param.placeOnCanvasBehaviour) {
-            case 'extend-maximum':
+            case 'fixed-canvas':
                 activeDocument.resizeCanvas(param.width, param.height);
                 break;
             case 'limit-height':
