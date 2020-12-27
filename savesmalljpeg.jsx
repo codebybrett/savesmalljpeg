@@ -63,7 +63,7 @@ bringToFront();
         // Used with getCustomOptions
         // var scriptUUID = "c1025640-4ccf-11dd-ae16-0800200c9a66"
 
-var scriptVersion = '1.54'; // String comparison operators operate on this so keep two decimal digits.
+var scriptVersion = '1.55'; // String comparison operators operate on this so keep two decimal digits.
 
 // Using a file to store data between sessions - hopefully will work with older versions.
 var configDataFile = new File (app.preferencesFolder)
@@ -1277,7 +1277,7 @@ function MainEditModel (mainOpts, runOptions, settings) {
                 // In current image mode we have the folder if the document is open and previously saved.
                 try {
                     app.activeDocument; // Testing to see if the current image is open.
-                    outputFolder = new Folder (app.activeDocument.path);
+                    outputFolder = psTool.getCurrentDocumentPath ();
                     outputFolder.changePath(subfolderTxt);
                 } catch (e) {
                     // Silent error - outputFolder is null.
@@ -1373,16 +1373,34 @@ function MainEditModel (mainOpts, runOptions, settings) {
         return isTrueOption;
     };
 
+    this.needSaveAsPrompt = function () {
+        var preset = this.getCurrentPreset();
+        var isAskMode = ('ask' == preset.saveBehaviour);
+        var docPath = psTool.getCurrentDocumentPath ();
+        var isFolderMissing = (docPath == null);
+        // TODO:
+        //  Resolve case where folder is missing but we are in name edit field mode
+        //  (a)  file is new - should be in prompt mode
+        //  (b) file location subsequently got moved 
+        // Need to introduce a state machine to resolve this properly as this code now has inconsistent states.
+        // Without doing this, the user will have to enter a name and then will get
+        // as Save As dialog as well.
+        // var needPrompt = (isAskMode || isFolderMissing);
+        var needPrompt = (isAskMode);
+
+        return needPrompt;
+    };
+
     this.isReadyToRun = function () {
         var preset = this.getCurrentPreset();
         var currentImageOnly = (preset.inputOption == "currentImage");
         var isReady = false;
-        if ('ask' == preset.saveBehaviour)
+        if (this.needSaveAsPrompt())
             // Need a document open.
             isReady = psTool.isDocumentActive()
         else
             if (currentImageOnly)
-                // Name must be input.
+                // Name must be input if we have a folder name.
                 isReady = (psTool.isDocumentActive()) && (this.processFile != '')
             else
                 // Processing folder must be specified.
@@ -2013,7 +2031,7 @@ function showUiMain (mmdl) {
         this.etToProcess.visible = false;
         this.etFilename.visible = false;
 
-        if ('ask' == preset.saveBehaviour) {
+        if (mmdl.needSaveAsPrompt()) {
             
             // ---------------------------------
             // Prompt for save location
