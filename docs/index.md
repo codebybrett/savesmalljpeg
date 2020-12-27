@@ -63,11 +63,29 @@ The settings here determine what images are procesed (one opened image or many i
 
 The tabs "Preparation", "Resizing", "Presentation" and "Finally" provide options for each of the processing steps of an image.
 
-## Folder processing
+## Batch processing by Folder
 
 Folder processing of images in a batch can be activated by changing "Process the current image only" to "Process all images in a folder".  The operation of the main dialog changes for this option.
 
 On the main dialog, a "Browse" button becomes available to choose the folder of images to process. The "Run" button starts the batch process.
+
+## Batch processing by list of images
+
+This is a useful option when your images are spread across different folders,
+or where you want to reprocess a list of images in different sizes.
+
+Use the "Process a list of images" option in the preset.
+
+On the main dialog, a "Browse" button becomes available to choose the text file
+of images to process. The "Run" button starts the batch process.
+
+The text file format is simply a full file path to each image on a separate line
+for example:
+
+    C:\Users\brett\Pictures\Image1.PSD
+    C:\Users\brett\Pictures\Image2.TIF
+    C:\Users\brett\Pictures\Image3.JPG
+
 
 ## Photoshop upgrades and versions
 
@@ -75,7 +93,7 @@ If you upgrade Photoshop you may find that your settings of the script are not a
 
 At the time of writing for example my script settings file is stored in this location on Windows:
 
-    C:\Users\brett\AppData\Roaming\Adobe\Adobe Photoshop CC 2018\Adobe Photoshop CC 2018 Settings
+    C:\Users\brett\AppData\Roaming\Adobe\Adobe Photoshop 2021\Adobe Photoshop 2021 Settings
 
 The script settings file is called:
 

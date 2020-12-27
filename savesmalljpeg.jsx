@@ -63,7 +63,7 @@ bringToFront();
         // Used with getCustomOptions
         // var scriptUUID = "c1025640-4ccf-11dd-ae16-0800200c9a66"
 
-var scriptVersion = '1.55'; // String comparison operators operate on this so keep two decimal digits.
+var scriptVersion = '1.60'; // String comparison operators operate on this so keep two decimal digits.
 
 // Using a file to store data between sessions - hopefully will work with older versions.
 var configDataFile = new File (app.preferencesFolder)
@@ -130,6 +130,21 @@ var formatDate = function (date, format) {
             throw "Encountered an invalid date format: " + format;
     };
 };
+
+// Some things that shouldn't be this hard.
+// See: https://community.adobe.com/t5/premiere-pro/how-to-check-given-path-isfile-or-isdirectory-in-jsx/td-p/9159544?page=1
+function doesFileExist(path)  
+{  
+     var file = Folder(path);     // Returns a File object if the path exists and is a file.  
+     return file.constructor == File;  
+}  
+
+function doesDirectoryExist(path)  
+{
+     var dir = Folder(path);     // Returns a Folder object if the path is a folder or doesn't exist.  
+     return dir.constructor == Folder && dir.exists;  
+}  
+
 
 // ================================================================================
 // Photoshop Tool
@@ -718,7 +733,7 @@ function Settings () {
                 };
             };
         };
-   
+
         return data;
     };
     
@@ -929,6 +944,10 @@ function PresetOptions () {
         {
             name: 'allImagesInFolder',
             text: 'Process all images in a folder'
+        },
+        {
+            name: 'listOfFiles',
+            text: 'Process a list of images'
         }
     ];
 
@@ -1213,7 +1232,7 @@ function MainEditModel (mainOpts, runOptions, settings) {
     this.mvlu = this.sttngs.userData;
 
     this.processFile = '';
-    this.processFldr = null;
+    this.batchProcessPath = null;
 
     // --------------------------------------------------------------------------------
     // Setters and Getters.
@@ -1261,6 +1280,12 @@ function MainEditModel (mainOpts, runOptions, settings) {
         return txt;
     };
 
+    this.isListOfFilesMode = function () {
+        var preset = this.getCurrentPreset();
+        var isListOfFiles = (preset.inputOption == "listOfFiles");
+        return isListOfFiles;
+    };
+
     this.getOutputFolder = function () {
 
         // outputFolder is valid only if we have some specification.
@@ -1283,9 +1308,9 @@ function MainEditModel (mainOpts, runOptions, settings) {
                     // Silent error - outputFolder is null.
                 }
             } else {
-                // In batch mode - we will have the folder only if the process folder has been specified.
-                if (this.processFldr) {
-                    outputFolder = new Folder (this.processFldr);
+                // In folder processing batch mode - we will have the folder only if the process path has been specified.
+                if (this.batchProcessPath) {
+                    outputFolder = new Folder (this.batchProcessPath);
                     outputFolder.changePath(subfolderTxt);
                 }
             }
@@ -1298,26 +1323,26 @@ function MainEditModel (mainOpts, runOptions, settings) {
         return outputFolder;
     };
 
-    this.setProcessFolder = function (folder) {
-        $.writeln('setProcessFolder ' + folder);
-        this.processFldr = folder;
+    this.setProcessPath = function (fileOrFolder) {
+        $.writeln('setProcessPath ' + fileOrFolder);
+        this.batchProcessPath = fileOrFolder;
     };
 
-    this.getProcessFolderTxt = function () {
+    this.getProcessPathTxt = function () {
         var txt = '';
-        if (this.processFldr)
-            txt = this.processFldr.fsName;
+        if (this.batchProcessPath)
+            txt = this.batchProcessPath.fsName;
         return txt;
     };
 
-    this.getProcessLastFolder = function () {
-        var lastFolder = null;
-        if (this.processFldr) {
-            lastFolder = this.processFldr;
+    this.getLastProcessed = function () {
+        var lastProcessed = null;
+        if (this.batchProcessPath) {
+            lastProcessed = this.batchProcessPath;
         } else {
-            lastFolder = Folder(this.sttngs.userData.lastProcessed);
+            lastProcessed = Folder(this.sttngs.userData.lastProcessed);
         };
-        return lastFolder;
+        return lastProcessed;
     };
 
     this.getSubfolderName = function () {
@@ -1403,8 +1428,8 @@ function MainEditModel (mainOpts, runOptions, settings) {
                 // Name must be input if we have a folder name.
                 isReady = (psTool.isDocumentActive()) && (this.processFile != '')
             else
-                // Processing folder must be specified.
-                isReady = (this.processFldr != null);
+                // Batch processing path must be specified.
+                isReady = (this.batchProcessPath != null);
         return isReady;
     };
 
@@ -1443,7 +1468,7 @@ function MainEditModel (mainOpts, runOptions, settings) {
         if (preset.inputOption == "currentImage")
             prcOpt.inputName = this.processFile
         else
-            prcOpt.inputName = this.getProcessFolderTxt();
+            prcOpt.inputName = this.getProcessPathTxt();
 
         // Set the image parameters according to the current Preset.
         var imgp = new Object();
@@ -1727,6 +1752,17 @@ function PresetEditModel (presetOpts, preset) {
         );
 
         this.rules[this.rules.length] = new SimpleRule (
+            'listOfFiles', 'A save folder must be used when processing a list of files.',
+            function (val) {
+                var isValidOption = (
+                    (val.inputOption != 'listOfFiles')
+                    || (val.saveBehaviour == 'saveToSaveFolder')
+                );
+                return isValidOption;
+            }
+        );
+
+        this.rules[this.rules.length] = new SimpleRule (
             'saveFolder', 'A folder to save to must be specified.',
             function (val) {
                 var isValidOption = (
@@ -1952,7 +1988,7 @@ function showUiMain (mmdl) {
             stProcess:StaticText{bounds:[15,80,60,100] , text:'Process:', justify: 'right' },\
             etFilename:EditText{bounds:[70,80,570,100] , text:'' , helpTip: 'Enter the name for this image.'},\
             etToProcess:EditText{bounds:[70,80,570,100] , visible:false; text:'' ,properties:{readonly:true}, helpTip: 'The images located here will be processed.'},\
-            btnBrowse:Button{bounds:[585,80,660,100] , text:'Browse...' , helpTip: 'Browse for a folder to process.'},\
+            btnBrowse:Button{bounds:[585,80,660,100] , text:'Browse...' , helpTip: 'Browse for batch of images to process.'},\
             stFolderDisplay:StaticText{bounds:[70,105,570,125] , text:''  ,properties:{readonly:true}, helpTip:'Your image will be stored here.'},\
             \
             cbOpenAfterSave:Checkbox{bounds:[70,150,300,171] , text:'open the new image after saving it', helpTip: 'Opens the image in Photoshop after it has been saved.' },\
@@ -2154,7 +2190,7 @@ function showUiMain (mmdl) {
         win.cmdDone();
     };
     win.btnBrowse.onClick = function () {
-        win.cmdChooseFolder();
+        win.cmdBrowseBatch();
     };
 
     // --------------------------------------------------------------------------------
@@ -2177,12 +2213,26 @@ function showUiMain (mmdl) {
         this.syncMainValidationState();
     };
 
-    win.cmdChooseFolder = function() {
-        var lastFolder = mmdl.getProcessLastFolder();
-        var usrFolder = lastFolder.selectDlg ("Choose the folder to be processed:");
-        if (usrFolder) {
-            mmdl.setProcessFolder(usrFolder);
-            this.etToProcess.text = mmdl.getProcessFolderTxt();
+    win.cmdBrowseBatch = function() {
+        var usrBatchPath;
+        var lastProcessed = mmdl.getLastProcessed();
+        var lastTyp = (lastProcessed.constructor);
+        // See: https://community.adobe.com/t5/premiere-pro/how-to-check-given-path-isfile-or-isdirectory-in-jsx/td-p/9159544?page=1
+
+        if (mmdl.isListOfFilesMode()) {
+            if (lastTyp == File)
+                usrBatchPath = lastProcessed.openDlg ("Choose the file that lists the images to be processed:")
+            else
+                usrBatchPath = File.openDialog ("Choose the file that lists the images to be processed:");
+        } else {
+            if (lastTyp == Folder)
+                usrBatchPath = lastProcessed.selectDlg ("Choose the folder to be processed:");
+            else
+                usrBatchPath = Folder.selectDialog ("Choose the folder to be processed:");
+        };
+        if (usrBatchPath) {
+            mmdl.setProcessPath(usrBatchPath);
+            this.etToProcess.text = mmdl.getProcessPathTxt();
             this.updateRunOptionSaveFolder();
             this.syncMainValidationState();
         };
@@ -3271,6 +3321,30 @@ try {
     //  Get our helper Photoshop Tool object.
     psTool = new PhotoshopTool ();
 
+    // Something to read a file of filenames.
+    var readListFile = function (listFile) {
+        // Returns the stored configuration settings, or default settings.
+        // If you add more options, then you will need to deal with missing elements from configurations already stored on user's computers.
+        var str, ln, imgFile, files;
+        var fileIsOpen = listFile.open('r')
+        if (listFile.error != "")
+            throw listFile.error;
+        files = new Array();
+        ln = 0;
+        while (!listFile.eof) {
+            ln +=  1;
+            str = listFile.readln();
+            imgFile = new File(str);
+            if (imgFile.constructor != File)
+                throw "Error on line " + ln + ": expecting a path to a file.";
+            files[files.length] = imgFile;
+        };
+        if (fileIsOpen)
+            listFile.close();
+        return files;
+    };
+
+
     //  Option objects.
     mnOpts = new MainOptions ();
     pstOpts = new PresetOptions ();
@@ -3317,8 +3391,10 @@ try {
                 throw "Script cancelled."
 
         if (runOptions.saveFolder) {
-            if (! runOptions.inputName) throw "Unexpected error: Name has no value."
-            if (! runOptions.saveFolder.exists) runOptions.saveFolder.create();
+            if (! runOptions.inputName)
+                throw "Unexpected error: Name has no value."
+            if (! runOptions.saveFolder.exists)
+                runOptions.saveFolder.create();
 
             imageFile = new File(runOptions.saveFolder);
             if (hasJpgSuffix(runOptions.inputName))
@@ -3372,12 +3448,27 @@ try {
 
     } else {
 
-        // FOLDER PROCESSING MODE
+        // BATCH PROCESSING MODE
 
-        var inputFolder = new Folder(runOptions.inputName);
-        var filesToProcess = psTool.getOpenableFiles(inputFolder);
-        var imageFile,saveFile, someAlreadyExist, someWillOverwriteOriginal, someExceedFilesize, someTooSmall;
-        
+        var filesToProcess;
+        var imageFile,saveFile;
+        var someMissing, someAlreadyExist, someWillOverwriteOriginal, someExceedFilesize, someTooSmall;
+
+        if (runOptions.inputOption == "listOfFiles") {
+
+            var inputListFile = new File(runOptions.inputName);
+            if (!inputListFile.exists)
+                throw "The file containing the list of images does not exist.";
+
+            // Read file into array.
+            filesToProcess = readListFile(inputListFile);
+
+        } else {
+            // All images in a folder.
+            var inputFolder = new Folder(runOptions.inputName);
+            filesToProcess = psTool.getOpenableFiles(inputFolder);
+        };
+
          var namingSubFn = function (imageFile, prefix, suffix) {
             var tmp = unescape(imageFile.name).replace(/ /g,"-");
             var saveFile = new File(runOptions.saveFolder)
@@ -3413,6 +3504,8 @@ try {
         var outputFiles = new Array();
         for (var i=0; i<filesToProcess.length;i++) {
             imageFile = filesToProcess[i];
+            if (!imageFile.exists)
+                someMissing = true;
             saveFile = namingFn(imageFile);
             var idx = filesToProcess.indexWhen(
                 function (x) {
@@ -3424,6 +3517,12 @@ try {
             if (saveFile.exists)
                 someAlreadyExist = true;
             outputFiles[i] = saveFile;
+        };
+
+        // Check they all still exist.
+        if (someMissing) {
+            alert ("Some files are missing. Process cancelled.");
+            throw "Script cancelled.";
         };
 
         // Check that they won't overwrite orginal.

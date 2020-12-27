@@ -8,7 +8,7 @@ My original motivation (in 2008) was to use a preset based approach to exporting
 
 Now that lightroom is here, many will have no need for this script because they can use the preset export approach in Lightroom.
 
-But if you're a Photoshop user who just wants an easy regularly used way to export PSDs or other images to Jpeg this script has value.
+But if you're a Photoshop user who just wants an easy regularly used way to export PSDs or other images to Jpeg individually or batched, this script has value.
 
 The script also provides support for adding white filler bars to meet Instagram's varible heigh range limits.
 
