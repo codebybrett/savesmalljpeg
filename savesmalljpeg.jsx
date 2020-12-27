@@ -189,6 +189,18 @@ function PhotoshopTool () {
         return result;
     }
 
+    this.getCurrentDocumentPath = function () {
+        // In current image mode we have the folder if the document is open, previously saved and hasn't moved after opening.
+        currentPath = null;
+        try {
+            app.activeDocument; // Testing to see if the current image is open.
+            currentPath = new Folder (app.activeDocument.path);
+        } catch (e) {
+            // Silent error - currentPath is null.
+        }
+        return currentPath;
+    }
+
     this.canOpenInPhotoshop = function (f) {
         var ext = getFileExtensionOrType(f);
         if (!ext) return false;
