@@ -44,9 +44,9 @@ Save the script to a folder on your computer from this link: [savesmalljpeg.jsx]
 
 ## How to run the script
 
-The simplest way: in Photoshop use File/Scripts/Browse and load the script. Done.
+To run without installing it: use File/Scripts/Browse and load the script.
 
-Or for ongoing convenience: copy the script to your Photoshop .../Presets/Scripts folder, then you can access it by File/Scripts/Save Small JPEG...
+For ongoing convenience: copy the script to your Photoshop .../Presets/Scripts folder, then you can access it by File/Scripts/Save Small JPEG...
 
 ## Making and removing presets
 
