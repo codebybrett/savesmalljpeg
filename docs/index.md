@@ -29,6 +29,7 @@ The preset settings window:
 * Exports as sRGB.
 * Optional maximum file size, maximises quality while fitting in specified file size.
 * Folder processing mode - for batch processing.
+* Process a list of files - for batch processing.
 * Optional, subfolder destination templates.
 * Optional photoshop actions.
 * Optional rotation, scaling and border options.
