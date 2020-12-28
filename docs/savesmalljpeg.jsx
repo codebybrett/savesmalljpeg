@@ -63,7 +63,7 @@ bringToFront();
         // Used with getCustomOptions
         // var scriptUUID = "c1025640-4ccf-11dd-ae16-0800200c9a66"
 
-var scriptVersion = '1.60'; // String comparison operators operate on this so keep two decimal digits.
+var scriptVersion = '1.61'; // String comparison operators operate on this so keep two decimal digits.
 
 // Using a file to store data between sessions - hopefully will work with older versions.
 var configDataFile = new File (app.preferencesFolder)
@@ -194,27 +194,6 @@ function PhotoshopTool () {
         this.openableFileTypes = app.macintoshFileTypes
     else
         this.openableFileTypes = app.windowsFileTypes;
-
-    this.isDocumentActive = function () {
-        var result = true;
-        try {app.activeDocument} // test if there is a document open
-        catch (e) {
-            result = false;
-        };
-        return result;
-    }
-
-    this.getCurrentDocumentPath = function () {
-        // In current image mode we have the folder if the document is open, previously saved and hasn't moved after opening.
-        currentPath = null;
-        try {
-            app.activeDocument; // Testing to see if the current image is open.
-            currentPath = new Folder (app.activeDocument.path);
-        } catch (e) {
-            // Silent error - currentPath is null.
-        }
-        return currentPath;
-    }
 
     this.canOpenInPhotoshop = function (f) {
         var ext = getFileExtensionOrType(f);
@@ -1301,8 +1280,7 @@ function MainEditModel (mainOpts, runOptions, settings) {
             if (currentImageOnly) {
                 // In current image mode we have the folder if the document is open and previously saved.
                 try {
-                    app.activeDocument; // Testing to see if the current image is open.
-                    outputFolder = psTool.getCurrentDocumentPath ();
+                    outputFolder = psDoc.getCurrentDocumentPath ();
                     outputFolder.changePath(subfolderTxt);
                 } catch (e) {
                     // Silent error - outputFolder is null.
@@ -1401,7 +1379,7 @@ function MainEditModel (mainOpts, runOptions, settings) {
     this.needSaveAsPrompt = function () {
         var preset = this.getCurrentPreset();
         var isAskMode = ('ask' == preset.saveBehaviour);
-        var docPath = psTool.getCurrentDocumentPath ();
+        var docPath = psDoc.getCurrentDocumentPath ();
         var isFolderMissing = (docPath == null);
         // TODO:
         //  Resolve case where folder is missing but we are in name edit field mode
@@ -1422,11 +1400,11 @@ function MainEditModel (mainOpts, runOptions, settings) {
         var isReady = false;
         if (this.needSaveAsPrompt())
             // Need a document open.
-            isReady = psTool.isDocumentActive()
+            isReady = psDoc.isDocumentActive()
         else
             if (currentImageOnly)
                 // Name must be input if we have a folder name.
-                isReady = (psTool.isDocumentActive()) && (this.processFile != '')
+                isReady = (psDoc.isDocumentActive()) && (this.processFile != '')
             else
                 // Batch processing path must be specified.
                 isReady = (this.batchProcessPath != null);
@@ -2982,7 +2960,7 @@ function MacJpgFilter(f)
 
 
 // ================================================================================
-// activeDocumentHandler
+// psDoc
 //
 // Used to operate on the activeDocument. By gathering all the operations that manipulate the
 // activeDocument into one object it is easier to see what is happening.
@@ -2992,16 +2970,58 @@ function MacJpgFilter(f)
 // So to avoid confusion all functions here manipulate and refer to the activeDocument.
 // ================================================================================
 
-var activeDocumentHandler = new Object();
+var psDoc = new Object();
 
 // --------------------------------------------------------------------------------
 // Checks that image requirements are met
 // --------------------------------------------------------------------------------
 
-activeDocumentHandler.compliesWithRequirements = function (param) {
+psDoc.isDocumentActive = function () {
+    var result = true;
+    try {app.activeDocument} // test if there is a document open
+    catch (e) {
+        result = false;
+    };
+    return result;
+}
+
+psDoc.isDocumentSaved = function () {
+
+    if (!app.activeDocument.saved)
+        return false;
+
+    // In Photoshop 2021 I noticed the activeDocument.saved property reports true sometimes when it should be false.
+    // This may be a debugging glitch with ExtendScript, but I'm not taking chances.
+
+    var result = true;
+    try {app.activeDocument.fullName} // test if document has a name
+    catch (e) {
+        result = false;
+    };
+    return result;
+}
+
+psDoc.getCurrentDocumentPath = function () {
+    // In current image mode we have the folder if the document is open, previously saved and hasn't moved after opening.
+    currentPath = null;
+    try {
+        app.activeDocument; // Testing to see if the current image is open.
+        currentPath = new Folder (app.activeDocument.path);
+    } catch (e) {
+        // Silent error - currentPath is null.
+    }
+    return currentPath;
+}
+
+
+// --------------------------------------------------------------------------------
+// Checks that image requirements are met
+// --------------------------------------------------------------------------------
+
+psDoc.compliesWithRequirements = function (param) {
     // Returns True if the current image satisfies the requirements.
 
-    var unModified = app.activeDocument.saved
+    var unModified = psDoc.isDocumentSaved()
     if (!unModified) return false;
 
     var placeMode = param.PlaceOnCanvasBehaviourOptions;
@@ -3055,7 +3075,7 @@ activeDocumentHandler.compliesWithRequirements = function (param) {
 // Rotates an image for best fit.
 // --------------------------------------------------------------------------------
 
-activeDocumentHandler.rotateForBestFit = function (width, height)  {
+psDoc.rotateForBestFit = function (width, height)  {
     //
     // If necessary, rotates  the document.
     //
@@ -3072,7 +3092,7 @@ activeDocumentHandler.rotateForBestFit = function (width, height)  {
 // Resizes an image according to limits and aspect ratio.
 // --------------------------------------------------------------------------------
 
-activeDocumentHandler.reduceToFit = function (maxWidth, maxHeight, reductionMethod)  {
+psDoc.reduceToFit = function (maxWidth, maxHeight, reductionMethod)  {
     //
     // If necessary, reduces the document to fit within the limits given.
     // An alternative (discovered after writing this) is to use Photoshop's FitImage automation plugin.
@@ -3094,7 +3114,7 @@ activeDocumentHandler.reduceToFit = function (maxWidth, maxHeight, reductionMeth
 // Does the photoshop actions required to make the new image.
 // --------------------------------------------------------------------------------
 
-activeDocumentHandler.makeCompliantImage = function (param) {
+psDoc.makeCompliantImage = function (param) {
     // Creates a flat duplicate of the current document.
     //
     
@@ -3263,17 +3283,21 @@ activeDocumentHandler.makeCompliantImage = function (param) {
 // original is not yet saved.
 // --------------------------------------------------------------------------------
 
-activeDocumentHandler.saveSmallJPEG = function (imageFile, imageParameters) {
+psDoc.saveSmallJPEG = function (imageFile, imageParameters) {
     
     // Copies current image to destination if it satisfies requirements,
     // if not duplicates it and manipulates it to requirements, saving to destination.
     //
     
       // Check that originals will not be overwritten.
-    if (activeDocument.fullName == imageFile.fullName)
+    if ((psDoc.isDocumentSaved())
+            && (activeDocument.fullName == imageFile.fullName))
         throw "Refused request to overwrite original - process aborted. Save to a different folder if you're processing JPGs."
 
-    if ((app.activeDocument.saved) && (activeDocumentHandler.compliesWithRequirements(imageParameters))) {
+    if (
+        (psDoc.isDocumentSaved())
+        && (psDoc.compliesWithRequirements(imageParameters))
+        ) {
         
         // No work to do - just do a file copy to the destination.
         activeDocument.fullName.copy(imageFile);
@@ -3381,18 +3405,20 @@ try {
         
         // SINGLE IMAGE MODE
 
-        if (!psTool.isDocumentActive()) {
+        if (!psDoc.isDocumentActive()) {
             alert ("No image open.");
             throw "Script cancelled."
         }
 
-        if (!app.activeDocument.saved)
+        if (!psDoc.isDocumentSaved())
             if (!confirm ("Your master image has changes that have not yet been saved, are you sure you want to continue?", true, "Unsaved changes"))
                 throw "Script cancelled."
 
         if (runOptions.saveFolder) {
-            if (! runOptions.inputName) throw "Unexpected error: Name has no value."
-            if (! runOptions.saveFolder.exists) runOptions.saveFolder.create();
+            if (! runOptions.inputName)
+                throw "Unexpected error: Name has no value."
+            if (! runOptions.saveFolder.exists)
+                runOptions.saveFolder.create();
 
             imageFile = new File(runOptions.saveFolder);
             if (hasJpgSuffix(runOptions.inputName))
@@ -3412,7 +3438,8 @@ try {
         imageFile = tmp;
 
         // Check that they won't overwrite orginal.
-        if (app.activeDocument.fullName == imageFile.fullName) {
+        if ((psDoc.isDocumentSaved())
+            && (app.activeDocument.fullName == imageFile.fullName)) {
             alert ("Same name as original. Cancelled.");
             throw "Script cancelled.";
         };
@@ -3431,7 +3458,7 @@ try {
         // Process the image
         psTool.setDefaultSettings();
         try {
-            activeDocumentHandler.saveSmallJPEG(imageFile, runOptions.imageParameters);
+            psDoc.saveSmallJPEG(imageFile, runOptions.imageParameters);
         }
         catch (e) {
             throw e; // reraise any exceptions
@@ -3554,11 +3581,15 @@ try {
                     saveFile = outputFiles[i];
                     progressWin.text = "Save Small JPEG - Processing '" + imageFile.name + "' (" + saveCount + " saved,  " + (filesToProcess.length - i )+ " left)";
                     app.open(imageFile);
-                    activeDocumentHandler.saveSmallJPEG(saveFile, runOptions.imageParameters);
+                    psDoc.saveSmallJPEG(saveFile, runOptions.imageParameters);
                     saveCount = i + 1;
                         if  (   (runOptions.imageParameters.smallImageWarning)
                                 && (activeDocument.width < runOptions.imageParameters.width)
                                 && (activeDocument.height < runOptions.imageParameters.height)
+                                && (
+                                    (runOptions.imageParameters.placeOnCanvasBehaviour != "limit-height")
+                                    || (activeDocument.height < Number(runOptions.imageParameters.canvasOpt1))
+                                )
                             )
                             someTooSmall = true;
                 }
@@ -3584,7 +3615,7 @@ try {
         if (usrCancel) msgTxt = 'Save Small JPEG - Processing cancelled.';
         alert (msgTxt + ' ' + saveCount + ' saved to ' + runOptions.saveFolder.fsName);
         if (someExceedFilesize) alert ('Some files were created that were larger than your specified maximum filesize.');
-        if (someTooSmall) alert ('Some images were created that were smaller than *both* the maximum width and maxium height.');
+        if (someTooSmall) alert ('Some images were created that were smaller than your specifications.');
     };
 
 }
