@@ -204,6 +204,21 @@ function PhotoshopTool () {
         return result;
     }
 
+    this.isDocumentSaved = function () {
+
+        if (!app.activeDocument.saved)
+            return false;
+
+        // In Photoshop 2021 the activeDocument.saved property reports true when it should be false.
+
+        var result = true;
+        try {app.activeDocument.fullName} // test if document has a name
+        catch (e) {
+            result = false;
+        };
+        return result;
+    }
+
     this.getCurrentDocumentPath = function () {
         // In current image mode we have the folder if the document is open, previously saved and hasn't moved after opening.
         currentPath = null;
@@ -3001,7 +3016,7 @@ var activeDocumentHandler = new Object();
 activeDocumentHandler.compliesWithRequirements = function (param) {
     // Returns True if the current image satisfies the requirements.
 
-    var unModified = app.activeDocument.saved
+    var unModified = psTool.isDocumentSaved()
     if (!unModified) return false;
 
     var placeMode = param.PlaceOnCanvasBehaviourOptions;
@@ -3270,10 +3285,11 @@ activeDocumentHandler.saveSmallJPEG = function (imageFile, imageParameters) {
     //
     
       // Check that originals will not be overwritten.
-    if (activeDocument.fullName == imageFile.fullName)
+    if ((psTool.isDocumentSaved())
+            && (activeDocument.fullName == imageFile.fullName))
         throw "Refused request to overwrite original - process aborted. Save to a different folder if you're processing JPGs."
 
-    if ((app.activeDocument.saved) && (activeDocumentHandler.compliesWithRequirements(imageParameters))) {
+    if ((psTool.isDocumentSaved()) && (activeDocumentHandler.compliesWithRequirements(imageParameters))) {
         
         // No work to do - just do a file copy to the destination.
         activeDocument.fullName.copy(imageFile);
@@ -3386,7 +3402,7 @@ try {
             throw "Script cancelled."
         }
 
-        if (!app.activeDocument.saved)
+        if (!psTool.isDocumentSaved())
             if (!confirm ("Your master image has changes that have not yet been saved, are you sure you want to continue?", true, "Unsaved changes"))
                 throw "Script cancelled."
 
@@ -3414,7 +3430,8 @@ try {
         imageFile = tmp;
 
         // Check that they won't overwrite orginal.
-        if (app.activeDocument.fullName == imageFile.fullName) {
+        if ((psTool.isDocumentSaved())
+            && (app.activeDocument.fullName == imageFile.fullName)) {
             alert ("Same name as original. Cancelled.");
             throw "Script cancelled.";
         };
@@ -3561,6 +3578,10 @@ try {
                         if  (   (runOptions.imageParameters.smallImageWarning)
                                 && (activeDocument.width < runOptions.imageParameters.width)
                                 && (activeDocument.height < runOptions.imageParameters.height)
+                                && (
+                                    (runOptions.imageParameters.placeOnCanvasBehaviour != "limit-height")
+                                    || (activeDocument.height < Number(runOptions.imageParameters.canvasOpt1))
+                                )
                             )
                             someTooSmall = true;
                 }
@@ -3586,7 +3607,7 @@ try {
         if (usrCancel) msgTxt = 'Save Small JPEG - Processing cancelled.';
         alert (msgTxt + ' ' + saveCount + ' saved to ' + runOptions.saveFolder.fsName);
         if (someExceedFilesize) alert ('Some files were created that were larger than your specified maximum filesize.');
-        if (someTooSmall) alert ('Some images were created that were smaller than *both* the maximum width and maxium height.');
+        if (someTooSmall) alert ('Some images were created that were smaller than your specifications.');
     };
 
 }
