@@ -63,7 +63,7 @@ bringToFront();
         // Used with getCustomOptions
         // var scriptUUID = "c1025640-4ccf-11dd-ae16-0800200c9a66"
 
-var scriptVersion = '1.61'; // String comparison operators operate on this so keep two decimal digits.
+var scriptVersion = '1.62'; // String comparison operators operate on this so keep two decimal digits.
 
 // Using a file to store data between sessions - hopefully will work with older versions.
 var configDataFile = new File (app.preferencesFolder)
@@ -3053,18 +3053,18 @@ psDoc.compliesWithRequirements = function (param) {
 
     var profileOk = ((activeDocument.colorProfileType != ColorProfile.NONE) && (activeDocument.colorProfileName == param.colourProfile));
 
-    var noRotation = (param.imageRotationOptions != "none")
+    var noRotation = (param.imageRotationOptions != "none");
 
-    var fileSizeOk = (
-        (
-            (param.saveQualityOption = 'jpegQuality')
-            && (param.saveQualityValue = '100')
-        )
-        || (
-            (param.saveQualityOption = 'maxFilesize')
-            && (activeDocument.fullName.length <= (param.saveQualityValue * 1024))
-        )
+    var fullQuality = (
+            (param.saveQualityOption == 'jpegQuality')  && (param.saveQualityValue == '100')
     );
+
+    var fileInLimit = (
+            (param.saveQualityOption == 'maxFilesize')
+            && (activeDocument.fullName.length <= (param.saveQualityValue * 1024))
+    );
+
+    var fileSizeOk = (fullQuality || fileInLimit);
 
     var itComplies = (unModified && extOk && widthOk && heightOk && depthOk && profileOk && fileSizeOk && noRotation);
 
